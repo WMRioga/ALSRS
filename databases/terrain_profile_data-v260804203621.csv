@@ -1,0 +1,2 @@
+lat,lon,dem_source,elevation_m,elevation_std_m,slope_deg,slope_std_deg,aspect_deg
+7.3297,-73.1867,copernicus,1066.4307127542336,10.020476150444086,0.38688787817955017,0,263.8357849121094
