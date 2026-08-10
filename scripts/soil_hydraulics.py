@@ -82,7 +82,10 @@ def calculate_hydraulic_properties(soil_data):
             c_clay = (c_clay / total_text) * 100
             c_sand = (c_sand / total_text) * 100
             c_silt = (c_silt / total_text) * 100
-
+            
+        s_frac = c_sand / 100.0
+        c_frac = c_clay / 100.0
+        
         # Organic matter: %SOC * 1.724 (Van Bemmelen factor)
         # Converts soil organic carbon to soil organic matter
         c_soc_pct = float(soil_data['soc'][depth]) / SOILGRIDS_CONVERSION['soc']
@@ -93,19 +96,20 @@ def calculate_hydraulic_properties(soil_data):
         
         # Calculate wilting point at 33 kPa (first-stage estimate)
         # Linear regression equation using sand, clay, and organic matter
-        wp_33 = (-0.024 * c_sand) + (0.487 * c_clay) + (0.006 * c_om) \
-                - (0.005 * c_sand * c_om) + (0.013 * c_clay * c_om) \
-                + (0.068 * c_sand * c_clay) + 0.031
+        wp_33 = (-0.024 * s_frac) + (0.487 * c_frac) + (0.006 * c_om) \
+                - (0.005 * s_frac * c_om) + (0.013 * c_frac * c_om) \
+                + (0.068 * s_frac * c_frac) + 0.031
         # Adjust to final wilting point at 1500 kPa
         wp = wp_33 + (0.14 * wp_33) - 0.02
 
         # Calculate field capacity at 33 kPa (first-stage estimate)
-        fc_33 = (-0.251 * c_sand) + (0.195 * c_clay) + (0.011 * c_om) \
-                + (0.006 * c_sand * c_om) - (0.027 * c_clay * c_om) \
-                + (0.045 * c_sand * c_clay) + 0.297
-        # Adjust to final field capacity
-        fc = fc_33 + (1.28 * (fc_33 ** 2)) - (0.38 * fc_33) \
-             - (0.03 * c_sand * fc_33) + 0.02
+        # Saxton & Rawls (2006), Eq. 2 — sand*clay coefficient is 0.452,
+        # confirmed against la implementación de referencia USDA-ARS.
+        fc_33 = (-0.251 * s_frac) + (0.195 * c_frac) + (0.011 * c_om) \
+                + (0.006 * s_frac * c_om) - (0.027 * c_frac * c_om) \
+                + (0.452 * s_frac * c_frac) + 0.299
+        # Adjust to final field capacity (Saxton & Rawls 2006, Eq. 4)
+        fc = fc_33 + (1.283 * (fc_33 ** 2)) - (0.374 * fc_33) - 0.015
 
         # Physical sanity limits (not part of the original equation,
         # these are safeguards against out-of-range extrapolations)
