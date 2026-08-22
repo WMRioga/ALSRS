@@ -1,11 +1,78 @@
 """
-Shared coordinate conversion and drawing utility functions,
+Shared coordinate conversion, drawing utility functions, and geographic validators,
 used by any script that works with Web Mercator tiles
 (OpenTopoMap, ESRI World Imagery, or any other XYZ tile provider).
 """
+
 import math
 from PIL import ImageDraw
 
+
+# ---------------------------------------------------------------------------
+# Geographic Validation
+# ---------------------------------------------------------------------------
+
+def validate_coordinates(lat: float, lon: float) -> None:
+    """
+    Validates that geographic coordinates are within valid ranges.
+    
+    Latitude must be between -90 and 90 degrees.
+    Longitude must be between -180 and 180 degrees.
+    
+    Args:
+        lat: Latitude in decimal degrees
+        lon: Longitude in decimal degrees
+    
+    Raises:
+        ValueError: If coordinates are outside valid ranges
+    
+    Example:
+        >>> validate_coordinates(7.4584, -73.2221)  # Valid, no error
+        >>> validate_coordinates(95.5, -73.2221)    # Raises ValueError
+    """
+    if not -90 <= lat <= 90:
+        raise ValueError(
+            f"Latitude {lat} is out of range. Must be between -90 and 90 degrees."
+        )
+    
+    if not -180 <= lon <= 180:
+        raise ValueError(
+            f"Longitude {lon} is out of range. Must be between -180 and 180 degrees."
+        )
+
+
+def hectares_to_radius_meters(hectares: float) -> float:
+    """
+    Converts hectares to equivalent buffer radius in meters.
+    
+    Calculates the side length of a square with the given area and
+    returns half of that value, which represents the buffer radius
+    around a central point.
+    
+    Args:
+        hectares: Area in hectares (1 ha = 10,000 m²)
+    
+    Returns:
+        Buffer radius in meters
+    
+    Raises:
+        ValueError: If hectares is negative or zero
+    
+    Example:
+        >>> hectares_to_radius_meters(2)
+        70.71067811865476  # sqrt(20000) / 2
+    """
+    if hectares <= 0:
+        raise ValueError(f"Hectares must be positive. Got: {hectares}")
+    
+    area_m2 = hectares * 10000  # Convert hectares to square meters
+    side_length = math.sqrt(area_m2)  # Side length of equivalent square
+    return side_length / 2  # Radius is half the side length
+
+
+# ---------------------------------------------------------------------------
+# Coordinate Conversion
+# ---------------------------------------------------------------------------
 
 def latlon_to_tile(lat, lon, zoom):
     """
@@ -72,6 +139,10 @@ def meters_to_pixels(distance_m, lat, zoom, tile_size=256):
     return distance_m / meters_per_pixel
 
 
+# ---------------------------------------------------------------------------
+# Drawing Functions
+# ---------------------------------------------------------------------------
+
 def draw_marker(canvas, x, y, radius=4, color=(255, 40, 40)):
     """
     Draws a circular marker with white outline at position (x, y) on the canvas.
@@ -97,11 +168,6 @@ def draw_area_box(canvas, x, y, area_meters, lat, zoom, tile_size=256,
     (terrain_profile.py, soil_profile.py): a buffer of area_meters radius
     -> .bounds() -> square with side length 2*area_meters, centered at
     the point (x, y) in canvas pixels.
-    
-    x, y: pixel position of the center point (same as used for the marker)
-    area_meters: the same value passed to get_terrain_profile_area /
-                 get_soil_profile_area (the buffer "radius", not the square's side)
-    lat: latitude of the point (needed for meters-to-pixels conversion)
     
     Args:
         canvas: PIL Image object to draw on
