@@ -1,3 +1,4 @@
+# tile_utils.py
 """
 Shared coordinate conversion, drawing utility functions, and geographic validators,
 used by any script that works with Web Mercator tiles

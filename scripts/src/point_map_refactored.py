@@ -16,7 +16,7 @@ Supported tile providers:
     - OpenTopoMap (topographic)
 
 Example:
-    >>> from point_map import get_point_map
+    >>> from point_map_refactored import get_point_map
     >>> from tile_utils import hectares_to_radius_meters
     >>> # Generate satellite map for 2 hectares around a point
     >>> area_meters = hectares_to_radius_meters(2)
@@ -43,6 +43,7 @@ import requests
 from PIL import Image
 
 from tile_utils import (
+    DEFAULT_TILE_SIZE,
     draw_area_box,
     draw_marker,
     hectares_to_radius_meters,
@@ -56,12 +57,15 @@ from tile_utils import (
 # Global Configuration
 # ---------------------------------------------------------------------------
 
-# User-Agent for HTTP requests to tile servers
-# Replace with your real email for responsible API usage
+# User-Agent for HTTP requests to tile servers.
+# Replace with your real email for responsible API usage.
 USER_AGENT = "agri_land_suitability_pipeline (your_real_email@domain.com)"
 
-# Provider configuration: URL template, typical x/y ordering, typical max zoom,
-# and recommended pause between requests (each service has its own usage policy).
+# Seconds to wait for a tile server to respond before giving up.
+TILE_REQUEST_TIMEOUT = 10
+
+# Provider configuration: URL template, typical max zoom, and recommended
+# pause between requests (each service has its own usage policy).
 PROVIDERS = {
     "opentopomap": {
         "url_template": "https://tile.opentopomap.org/{z}/{x}/{y}.png",
@@ -69,8 +73,8 @@ PROVIDERS = {
         "sleep": 0.5,  # Seconds to wait between tile requests (rate limiting)
     },
     "esri": {
-        # NOTE: ESRI uses {z}/{y}/{x} ordering, reversed from the standard {z}/{x}/{y}
-        # This is a common gotcha when switching between tile providers
+        # NOTE: ESRI uses {z}/{y}/{x} ordering, reversed from the standard {z}/{x}/{y}.
+        # This is a common gotcha when switching between tile providers.
         "url_template": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         "max_zoom": 17,
         "sleep": 0.2,  # Seconds to wait between tile requests (rate limiting)
@@ -131,130 +135,158 @@ def get_point_map(
         >>> print(img_path)
         ../../img/maps/point_esri-v240815143022.png
     """
-    # Validate inputs before proceeding
     validate_coordinates(lat, lon)
+    _validate_arguments(provider, area_meters, radius)
 
+    config = PROVIDERS[provider]
+    url_template = config["url_template"]
+    max_zoom = config["max_zoom"]
+    sleep_seconds = config["sleep"]
+
+    zoom = max_zoom if zoom is None else zoom
+    _warn_if_zoom_exceeds_max(provider, zoom, max_zoom)
+
+    output_file = _build_output_path(out_prefix or f"point_{provider}", output_dir)
+
+    # Tile indices of the center point at the given zoom level.
+    tile_x_center, tile_y_center = latlon_to_tile(lat, lon, zoom)
+
+    # Bounding box of tiles to download (radius tiles on every side).
+    tile_x_min, tile_x_max = tile_x_center - radius, tile_x_center + radius
+    tile_y_min, tile_y_max = tile_y_center - radius, tile_y_center + radius
+
+    # Number of tiles per axis; +1 because the range is inclusive.
+    tiles_across = tile_x_max - tile_x_min + 1
+    tiles_down = tile_y_max - tile_y_min + 1
+
+    canvas = Image.new(
+        "RGB",
+        (tiles_across * DEFAULT_TILE_SIZE, tiles_down * DEFAULT_TILE_SIZE),
+    )
+
+    failed_tiles = _stitch_tiles(
+        canvas,
+        url_template,
+        zoom,
+        tile_x_min,
+        tile_x_max,
+        tile_y_min,
+        tile_y_max,
+        sleep_seconds,
+    )
+
+    if failed_tiles:
+        total_tiles = tiles_across * tiles_down
+        print(f"[WARNING] {failed_tiles}/{total_tiles} tiles failed and were left blank.")
+
+    if show_marker:
+        _draw_annotations(canvas, lat, lon, zoom, area_meters, tile_x_min, tile_y_min)
+
+    canvas.save(output_file)
+    print(f"Image saved to {output_file} ({canvas.width}x{canvas.height}px)")
+    return output_file
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _validate_arguments(provider: str, area_meters: float, radius: int) -> None:
+    """Raises ValueError for any invalid non-coordinate argument."""
     if provider not in PROVIDERS:
         raise ValueError(
             f"Provider '{provider}' not recognized. "
             f"Available options: {list(PROVIDERS.keys())}"
         )
-
     if area_meters <= 0:
         raise ValueError(f"area_meters must be positive. Got: {area_meters}")
-
     if radius < 0:
         raise ValueError(f"radius must be non-negative. Got: {radius}")
 
-    # Load provider-specific configuration
-    config = PROVIDERS[provider]
-    zoom = zoom or config["max_zoom"]  # Use max zoom if not explicitly provided
-    if zoom > config["max_zoom"]:
+
+def _warn_if_zoom_exceeds_max(provider: str, zoom: int, max_zoom: int) -> None:
+    """Warns when the requested zoom exceeds the provider's recommended max."""
+    if zoom > max_zoom:
         print(
             f"[WARNING] zoom={zoom} exceeds the recommended max_zoom for "
-            f"'{provider}' ({config['max_zoom']}); the provider may return blank or "
+            f"'{provider}' ({max_zoom}); the provider may return blank or "
             f"lower-quality tiles at that level."
         )
-        
-    out_prefix = out_prefix or f"point_{provider}"  # Default filename prefix
 
-    # Generate a unique filename with timestamp to avoid overwriting previous maps
+
+def _build_output_path(prefix: str, output_dir: str) -> Path:
+    """Creates the output directory and returns a timestamped output file path."""
+    output_dir_path = Path(output_dir)
+    output_dir_path.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%y%m%d%H%M%S")
-    filename = f"{out_prefix}-v{timestamp}.png"
+    return output_dir_path / f"{prefix}-v{timestamp}.png"
 
-    # Create output directory if it doesn't exist
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    out_path = output_path / filename
 
-    # Calculate the tile coordinates for the center point
-    # These are integer tile indices at the given zoom level
-    x_center, y_center = latlon_to_tile(lat, lon, zoom)
+def _stitch_tiles(
+    canvas: Image.Image,
+    url_template: str,
+    zoom: int,
+    x_min: int,
+    x_max: int,
+    y_min: int,
+    y_max: int,
+    sleep_seconds: float,
+) -> int:
+    """
+    Downloads every tile in the bounding box and pastes it onto the canvas.
 
-    # Define the bounding box of tiles to download
-    x_min, x_max = x_center - radius, x_center + radius
-    y_min, y_max = y_center - radius, y_center + radius
-
-    # Standard tile size for Web Mercator tiles (256x256 pixels)
-    tile_size = 256
-
-    # Calculate the total canvas dimensions in pixels
-    # +1 because range is inclusive of both min and max
-    width = (x_max - x_min + 1) * tile_size
-    height = (y_max - y_min + 1) * tile_size
-
-    # Create a blank RGB canvas to composite all tiles onto
-    canvas = Image.new("RGB", (width, height))
-
-    # Set HTTP headers with User-Agent for responsible API usage
+    Returns the number of tiles that could not be downloaded or decoded.
+    Respects the provider's rate limiting with a pause after each request.
+    """
     headers = {"User-Agent": USER_AGENT}
+    failed = 0
 
-    # Download and stitch together all tiles in the bounding box
-    failed_tiles = 0
-    for x in range(x_min, x_max + 1):
-        for y in range(y_min, y_max + 1):
-            # Build the tile URL using the provider's template
-            url = config["url_template"].format(z=zoom, x=x, y=y)
+    for tile_x in range(x_min, x_max + 1):
+        for tile_y in range(y_min, y_max + 1):
+            url = url_template.format(z=zoom, x=tile_x, y=tile_y)
+            response = requests.get(url, headers=headers, timeout=TILE_REQUEST_TIMEOUT)
 
-            # Fetch the tile image with a timeout to avoid hanging
-            resp = requests.get(url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                print(f"Tile {tile_x},{tile_y} failed with status {response.status_code}")
+                failed += 1
+            else:
+                try:
+                    tile = Image.open(BytesIO(response.content))
+                    canvas.paste(
+                        tile,
+                        (
+                            (tile_x - x_min) * DEFAULT_TILE_SIZE,
+                            (tile_y - y_min) * DEFAULT_TILE_SIZE,
+                        ),
+                    )
+                except Exception as exc:
+                    print(f"Tile {tile_x},{tile_y} failed: {exc}")
+                    failed += 1
 
-            # Skip this tile if the server returns an error
-            if resp.status_code != 200:
-                print(f"Tile {x},{y} failed with status {resp.status_code}")
-                failed_tiles += 1
-                time.sleep(config["sleep"])
-                continue
+            time.sleep(sleep_seconds)
 
-            try:
-                # Open the downloaded image from memory (avoids writing temp files)
-                tile_img = Image.open(BytesIO(resp.content))
+    return failed
 
-                # Paste the tile onto the canvas at the correct pixel offset
-                # (x - x_min) and (y - y_min) convert tile coordinates to canvas pixel coordinates
-                canvas.paste(
-                    tile_img,
-                    ((x - x_min) * tile_size, (y - y_min) * tile_size)
-                )
-            except Exception as e:
-                print(f"Tile {x},{y} failed: {e}")
-                failed_tiles += 1
 
-            # Respect the provider's rate limiting to avoid being blocked
-            time.sleep(config["sleep"])
+def _draw_annotations(
+    canvas: Image.Image,
+    lat: float,
+    lon: float,
+    zoom: int,
+    area_meters: float,
+    tile_x_min: int,
+    tile_y_min: int,
+) -> None:
+    """Draws the point marker and area-of-interest box on the canvas."""
+    # Absolute world pixel coordinates for the point.
+    px_world, py_world = latlon_to_pixel(lat, lon, zoom, DEFAULT_TILE_SIZE)
 
-    total_tiles = (x_max - x_min + 1) * (y_max - y_min + 1)
-    if failed_tiles > 0:
-        print(f"[WARNING] {failed_tiles}/{total_tiles} tiles failed and were left blank.")
+    # Convert to canvas-local pixels by removing the top-left tile offset.
+    px_canvas = px_world - tile_x_min * DEFAULT_TILE_SIZE
+    py_canvas = py_world - tile_y_min * DEFAULT_TILE_SIZE
 
-    # Draw the point marker and area box on the composited canvas
-    if show_marker:
-        # Get the absolute world pixel coordinates for the given lat/lon
-        px_world, py_world = latlon_to_pixel(lat, lon, zoom, tile_size)
-
-        # Convert world pixel coordinates to canvas-local pixel coordinates
-        # by subtracting the offset of the top-left tile in our grid
-        px_canvas = px_world - x_min * tile_size
-        py_canvas = py_world - y_min * tile_size
-
-        # Draw a red circular marker at the exact point location
-        draw_marker(canvas, px_canvas, py_canvas)
-
-        # Draw a box representing the area used in reduceRegion calculations
-        # This shows the actual spatial extent of the analysis
-        draw_area_box(
-            canvas,
-            px_canvas,
-            py_canvas,
-            area_meters,
-            lat=lat,
-            zoom=zoom
-        )
-
-    # Save the final composited image to disk
-    canvas.save(out_path)
-    print(f"Image saved to {out_path} ({width}x{height}px)")
-    return out_path
+    draw_marker(canvas, px_canvas, py_canvas)
+    draw_area_box(canvas, px_canvas, py_canvas, area_meters, lat=lat, zoom=zoom)
 
 
 # ---------------------------------------------------------------------------
