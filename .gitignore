@@ -1,0 +1,6 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Generated data artifacts (timestamped extraction/pipeline outputs)
+databases/*-v*.csv
