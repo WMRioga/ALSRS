@@ -46,6 +46,10 @@ except Exception:
     ee.Authenticate()
     ee.Initialize(project=EE_PROJECT)
 
+# Data source label used in the download/acquire progress messages.
+SOURCE_NAME = "Copernicus DEM"
+ANALYSIS_VARIABLE = "terrain"
+
 
 # Available Digital Elevation Model sources
 DEM_SOURCES = {
@@ -75,6 +79,9 @@ def get_terrain_profile_area(lat, lon, area_meters=56, dem_source="copernicus", 
     Raises:
         ValueError: If dem_source is not one of the available DEM sources
     """
+    print(f"Downloading satellite information {SOURCE_NAME} to analyze "
+          f"{ANALYSIS_VARIABLE}...")
+
     # Validate the requested DEM source
     if dem_source not in DEM_SOURCES:
         raise ValueError(f"dem_source must be one of {list(DEM_SOURCES.keys())}")
@@ -148,8 +155,8 @@ def get_terrain_profile_area(lat, lon, area_meters=56, dem_source="copernicus", 
 
     # Compile all terrain statistics into a results dictionary
     results = {
-        'lat': lat,
-        'lon': lon,
+        # 'lat': lat,   # Uncomment to include coordinates in the output
+        # 'lon': lon,   # Uncomment to include coordinates in the output
         'dem_source': dem_source,
         'elevation_m': stats['elevation_mean'],
         'elevation_std_m': stats['elevation_stdDev'],
@@ -160,6 +167,8 @@ def get_terrain_profile_area(lat, lon, area_meters=56, dem_source="copernicus", 
         # it's circular data (would require circular variance instead of
         # regular stdDev).
     }
+
+    print(f"Satellite information {SOURCE_NAME} acquired.")
     return results
 
 

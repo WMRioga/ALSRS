@@ -90,6 +90,10 @@ except Exception:
     ee.Authenticate()
     ee.Initialize(project=EE_PROJECT)
 
+# Data source label used in the download/acquire progress messages.
+SOURCE_NAME = "CHIRPS + ERA5-Land"
+ANALYSIS_VARIABLE = "SPEI (drought index)"
+
 
 # ---------------------------------------------------------------------------
 # PET Calculation
@@ -371,6 +375,9 @@ def get_spei_biweekly(
                           precip_mm, temp_c, pet_mm, water_balance,
                           spei_1m, spei_3m, spei_6m, spei_12m
     """
+    print(f"Downloading satellite information {SOURCE_NAME} to analyze "
+          f"{ANALYSIS_VARIABLE}...")
+
     # Parse date strings to Python date objects
     start = datetime.strptime(start_date, "%Y-%m-%d").date()
     end = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else date.today()
@@ -511,6 +518,7 @@ def get_spei_biweekly(
         ]
     ]
 
+    print(f"Satellite information {SOURCE_NAME} acquired.")
     return df
 
 
@@ -556,7 +564,9 @@ def save_spei_profile(
 
 if __name__ == "__main__":
     # Test point: Finca Matanza, Colombia
-    Latitude, Longitude = 7.300921, -73.009794
+    # Latitude, Longitude = 7.300921, -73.009794
+    Latitude, Longitude = -19.689669877950884,   147.22717515914223    
+    
 
     # Reference points for quick access (commented out):
     # El Playon         --||     7.4584221918243045,    -73.222052853104

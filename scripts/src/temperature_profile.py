@@ -43,6 +43,10 @@ except Exception:
     ee.Authenticate()
     ee.Initialize(project=EE_PROJECT)
 
+# Data source label used in the download/acquire progress messages.
+SOURCE_NAME = "ERA5-Land"
+ANALYSIS_VARIABLE = "temperature"
+
 
 # ---------------------------------------------------------------------------
 # Extraction Function
@@ -78,6 +82,9 @@ def get_temperature_biweekly(
                           period_start, period_end, label,
                           mean_C, std_C, var_C
     """
+    print(f"Downloading satellite information {SOURCE_NAME} to analyze "
+          f"{ANALYSIS_VARIABLE}...")
+
     # Parse date strings to Python date objects
     start = datetime.strptime(start_date, "%Y-%m-%d").date()
     end = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else date.today()
@@ -187,6 +194,7 @@ def get_temperature_biweekly(
     # datetime conversion is required (and it keeps the CSV dates clean).
     df = pd.DataFrame(rows)
     df = df.sort_values('period_start').reset_index(drop=True)
+    print(f"Satellite information {SOURCE_NAME} acquired.")
     return df
 
 

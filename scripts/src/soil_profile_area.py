@@ -38,6 +38,10 @@ except Exception:
     ee.Authenticate()
     ee.Initialize(project=EE_PROJECT)
 
+# Data source label used in the download/acquire progress messages.
+SOURCE_NAME = "SoilGrids (ISRIC)"
+ANALYSIS_VARIABLE = "soil properties"
+
 
 # ---------------------------------------------------------------------------
 # Global Configuration
@@ -81,6 +85,9 @@ def get_soil_profile_area(lat: float, lon: float, area_meters: float = 56) -> di
               where property_name is one of:
               'phh2o', 'soc', 'clay', 'sand', 'silt', 'bdod', 'cec'
     """
+    print(f"Downloading satellite information {SOURCE_NAME} to analyze "
+          f"{ANALYSIS_VARIABLE}...")
+
     # Create an Earth Engine point geometry from lon/lat
     # Note: EE expects [longitude, latitude] order
     center = ee.Geometry.Point([lon, lat])
@@ -120,6 +127,7 @@ def get_soil_profile_area(lat: float, lon: float, area_meters: float = 56) -> di
             # getInfo() triggers the actual computation on EE servers.
             results[prop][depth] = val.getInfo()
 
+    print(f"Satellite information {SOURCE_NAME} acquired.")
     return results
 
 
@@ -223,7 +231,7 @@ if __name__ == "__main__":
     area_meters = hectares_to_radius_meters(ha)
 
     # Example point: sugarcane field (Colombia)
-    lat, lon = -23.596836971029173,   148.1870868479914
+    lat, lon = -19.689669877950884,   147.22717515914223
 
     # Step 1: Extract raw soil properties from SoilGrids
     soil_data = get_soil_profile_area(lat, lon, area_meters)

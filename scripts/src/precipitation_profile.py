@@ -57,6 +57,10 @@ except Exception:
     ee.Authenticate()
     ee.Initialize(project=EE_PROJECT)
 
+# Data source label used in the download/acquire progress messages.
+SOURCE_NAME = "CHIRPS"
+ANALYSIS_VARIABLE = "precipitation"
+
 
 # ---------------------------------------------------------------------------
 # Extraction Function
@@ -88,9 +92,12 @@ def get_precipitation_biweekly(
 
     Returns:
         pandas.DataFrame: Biweekly precipitation statistics with columns:
-                          period_start, period_end, label, lat, lon,
+                          period_start, period_end, label,
                           precip_total_mm, precip_rainy_days, precip_max_daily_mm
     """
+    print(f"Downloading satellite information {SOURCE_NAME} to analyze "
+          f"{ANALYSIS_VARIABLE}...")
+
     # Parse date strings to Python date objects
     start = datetime.strptime(start_date, "%Y-%m-%d").date()
     end = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else date.today()
@@ -196,8 +203,8 @@ def get_precipitation_biweekly(
             'period_start': props.get('period_start'),
             'period_end': props.get('period_end'),
             'label': props.get('label'),
-            'lat': lat,
-            'lon': lon,
+            # 'lat': lat,   # Uncomment to include coordinates in the output
+            # 'lon': lon,   # Uncomment to include coordinates in the output
             'precip_total_mm': round(props.get('precip_total_mm'), 2) if props.get('precip_total_mm') is not None else None,
             'precip_rainy_days': int(rainy_days) if rainy_days is not None else None,
             'precip_max_daily_mm': round(props.get('precip_max_daily_mm'), 2) if props.get('precip_max_daily_mm') is not None else None,
@@ -220,6 +227,7 @@ def get_precipitation_biweekly(
         print(f"[WARNING] {null_rows} biweekly period(s) without data yet "
               f"(CHIRPS publication lag): {first_nulls}")
 
+    print(f"Satellite information {SOURCE_NAME} acquired.")
     return df
 
 
