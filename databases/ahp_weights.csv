@@ -1,0 +1,8 @@
+criterion,subcriterion,weight_local,weight_global
+clima,temperatura,1.00,0.30
+suelo,textura,0.50,0.15
+suelo,ph,0.30,0.09
+suelo,soc,0.20,0.06
+agua,wrsi,1.00,0.30
+terreno,pendiente,0.60,0.06
+terreno,elevacion,0.40,0.04
