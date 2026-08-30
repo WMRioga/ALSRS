@@ -384,6 +384,24 @@ def evaluate_static(
 # Temperature Evaluator (per biweekly period)
 # ---------------------------------------------------------------------------
 
+def _trapezoid(x: float, a: float, b: float, c: float, d: float) -> float:
+    """
+    Trapezoidal membership score in [0, 1] for a temperature value.
+
+    0 below ``a``, linear ramp 0->1 on ``[a, b]``, 1 on ``[b, c]``,
+    linear ramp 1->0 on ``[c, d]``, 0 above ``d``.
+    """
+    if pd.isna(x):
+        return float("nan")
+    if x <= a or x >= d:
+        return 0.0
+    if x < b:
+        return (x - a) / (b - a) if b > a else 1.0
+    if x <= c:
+        return 1.0
+    return (d - x) / (d - c) if d > c else 1.0
+
+
 def classify_temperature(
     mean_c: float, params: pd.Series
 ) -> Tuple[str, str, str]:
@@ -430,19 +448,27 @@ def evaluate_temperature_series(
 
     Returns:
         pandas.DataFrame: a copy of ``temp_df`` with added ``temp_bucket``,
-        ``temp_status`` and ``temp_detail`` columns (one row per period).
+        ``temp_status``, ``temp_detail`` and ``temp_score`` columns (one row
+        per period).
     """
     out = temp_df.copy()
-    buckets, statuses, details = [], [], []
+    tmin_tol = float(params["temp_min_tolerable_c"])
+    tmin_opt = float(params["temp_opt_min_c"])
+    tmax_opt = float(params["temp_opt_max_c"])
+    tmax_tol = float(params["temp_max_tolerable_c"])
+
+    buckets, statuses, details, scores = [], [], [], []
     for mean_c in out["mean_C"]:
         bucket, status, detail = classify_temperature(mean_c, params)
         buckets.append(bucket)
         statuses.append(status)
         details.append(detail)
+        scores.append(_trapezoid(mean_c, tmin_tol, tmin_opt, tmax_opt, tmax_tol))
 
     out["temp_bucket"] = buckets
     out["temp_status"] = statuses
     out["temp_detail"] = details
+    out["temp_score"] = scores
     return out
 
 
@@ -576,8 +602,9 @@ def build_temperature_frame(
     """
     out = series_df[
         ["period_start", "period_end", "label", "mean_C",
-         "temp_status", "temp_detail"]
+         "temp_status", "temp_detail", "temp_score"]
     ].copy()
+    out["temp_score"] = out["temp_score"].round(4)
     out.insert(0, "crop", params.name)
     return out
 

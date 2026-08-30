@@ -359,7 +359,7 @@ def build_labeled_dataset(
     output_cols = (
         ["crop", "period_start", "period_end", "label", "AWC_mm"]
         + ["spei_1m", "spei_3m", "spei_6m", "spei_12m"]
-        + ["P_acum_mm", "Storage_mm", "WRSI_actual"]
+        + ["P_acum_mm", "Storage_mm", "WRSI_actual", "deficit_pct"]
         + [f"WRSI_t{k}" for k in range(1, HORIZON + 1)]
         + [f"deficit_t{k}" for k in range(1, HORIZON + 1)]
         + ["suggestion"]
@@ -367,7 +367,7 @@ def build_labeled_dataset(
     labeled = labeled[output_cols]
 
     # Round numeric columns for a clean CSV.
-    for col in ["P_acum_mm", "Storage_mm", "AWC_mm"]:
+    for col in ["P_acum_mm", "Storage_mm", "AWC_mm", "deficit_pct"]:
         labeled[col] = labeled[col].round(2)
     for col in ["spei_1m", "spei_3m", "spei_6m", "spei_12m"]:
         labeled[col] = labeled[col].round(3)

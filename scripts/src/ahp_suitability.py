@@ -2,16 +2,16 @@
 AHP Land Suitability Module
 ===========================
 
-Combines the physical-viability and water-balance results into a single
-multi-criteria land-suitability score using the Analytic Hierarchy Process
-(AHP, Saaty 1980).
+Combines the outputs of the previous pipeline stages (``crop_viability`` and
+``water_balance``) into a single multi-criteria land-suitability score using
+the Analytic Hierarchy Process (AHP, Saaty 1980).
 
 The hierarchy (criteria and sub-criteria) and their weights are read from
-``databases/ahp_weights.csv``. Each sub-criterion is scored in the range 0-1
-with a fuzzy/trapezoidal membership function whose breakpoints come from the
-crop thresholds in ``crop_parameters.csv``:
+``databases/ahp_weights.csv``. Each sub-criterion is scored in the range 0-1:
 
-    - Temperature : trapezoidal per biweekly period, averaged over the series.
+    - Temperature : mean of the per-period ``temp_score`` column produced by
+                    ``crop_viability``, with an "extreme period" exception
+                    (see below).
     - Elevation   : 1 inside [elev_min, elev_max], linear ramp to 0 over a
                     10% tolerance margin outside the range.
     - Slope       : 1 up to slope_max, linear ramp to 0 at slope_max + 15 deg.
@@ -19,39 +19,38 @@ crop thresholds in ``crop_parameters.csv``:
                     ramping to 0 at 100%.
     - pH          : 1 inside [ph_min, ph_max]; 0.5 within +/- 1.0; 0.2 beyond.
     - SOC         : min(1, soc / soc_min).
-    - Water (WRSI): proportion of labeled biweekly periods with water deficit
-                    <= 30% (i.e. without severe water stress).
+    - Water (WRSI): proportion of labeled periods with ``deficit_pct <= 30``.
 
-The final suitability is the weighted sum of the sub-criterion scores:
+Temperature exception (a biweekly period outside the tolerable range has
+``temp_score == 0``):
+    - 0 extreme periods  -> score = mean(temp_score), no warning.
+    - 1 extreme period   -> mean(temp_score) + a field-validation warning.
+    - >1 extreme periods -> score = 0.0 (the temperature limiting factor then
+                            caps the class to N).
 
-    suitability = sum(weight_global * score)   over all sub-criteria
-
-and is mapped to the FAO land-suitability classes S1/S2/S3/N. A FAO
-"limiting factor" rule is then applied: a zero score in a hard criterion
-(elevation, texture, temperature) caps the class to N, while a zero slope
-score caps it to S3 and flags a field verification.
-
-This module reuses the pure (GEE-free) helpers of ``crop_viability`` and
-``water_balance``; the runner still regenerates the input CSVs from Earth
-Engine when ``regenerate=True``.
+The final suitability is the weighted sum of the sub-criterion scores, mapped
+to the FAO classes S1/S2/S3/N, plus a "limiting factor" rule: a zero score in
+a hard criterion (texture, temperature) caps the class to N, while a zero
+slope score caps it to S3 and flags a field verification. Elevation is a SOFT
+criterion (a proxy for temperature, which is measured directly): it lowers the
+score but never hard-fails, and emits a "validate with local conditions"
+warning when outside the literature range.
 
 Output:
     databases/land_suitability_{crop}-vYYMMDDHHMMSS.csv  (one row per crop)
     plus a human-readable console report.
 
 Dependencies:
-    - numpy, pandas
+    - pandas
     - crop_viability, water_balance (custom modules, same directory)
 """
 from __future__ import annotations
 
-import math
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 
 # Make the local modules importable regardless of the working directory.
@@ -59,29 +58,10 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-# Reuse the pure, GEE-free helpers from the previous pipeline stages.
-from crop_viability import (
-    CROP_PARAMS_FILENAME,
-    DATABASES_DIR,
-    SOIL_PREFIX,
-    TEMPERATURE_PREFIX,
-    TERRAIN_PREFIX,
-    latest_csv,
-    load_crop_parameters,
-    load_soil_profile,
-    load_temperature,
-    load_terrain,
-    soil_aggregates,
-)
-from water_balance import (
-    PRECIP_PREFIX,
-    SOIL_HYDRAULIC_PREFIX,
-    SPEI_PREFIX,
-    compute_wrsi_series,
-    load_awc,
-    load_precipitation,
-    load_spei,
-)
+# Upstream pipeline stages (imported as modules to call their main()).
+import crop_viability
+import water_balance
+from crop_viability import CROP_PARAMS_FILENAME, DATABASES_DIR, load_crop_parameters
 
 
 # ---------------------------------------------------------------------------
@@ -99,35 +79,52 @@ WATER_STRESS_THRESHOLD_PCT = 30.0  # deficit <= 30% counts as "no water stress"
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _latest(pattern: str, directory: Path = DATABASES_DIR) -> Path:
+    """
+    Returns the most recent CSV matching a glob pattern.
+
+    Filenames use a ``YYMMDDHHMMSS`` timestamp, so lexicographic sorting of
+    the timestamp portion equals chronological sorting; the last match is the
+    newest file.
+    """
+    candidates = sorted(directory.glob(pattern))
+    if not candidates:
+        raise FileNotFoundError(f"No CSV matching '{pattern}' in {directory}")
+    return candidates[-1]
+
+
+# ---------------------------------------------------------------------------
 # Scoring Functions (raw value -> 0-1)
 # ---------------------------------------------------------------------------
 
-def _trapezoid(x: float, a: float, b: float, c: float, d: float) -> float:
+def evaluate_temperature_score(temp_score: pd.Series) -> Tuple[float, str]:
     """
-    Trapezoidal membership: 0 below ``a``, ramp 0->1 on ``[a, b]``, 1 on
-    ``[b, c]``, ramp 1->0 on ``[c, d]``, 0 above ``d``.
+    Temperature score with the "extreme period" exception.
+
+    A biweekly period outside the tolerable range has ``temp_score == 0``:
+        - 0 extreme periods  -> score = mean(temp_score), no warning.
+        - 1 extreme period   -> mean(temp_score) + a field-validation warning.
+        - >1 extreme periods -> score = 0.0 (the temperature limiting factor
+                                then caps the class to N).
+
+    Args:
+        temp_score: Series of per-period trapezoidal scores in [0, 1].
+
+    Returns:
+        tuple: (score, warning) where ``warning`` is "" when none applies.
     """
-    if pd.isna(x):
-        return float("nan")
-    if x <= a or x >= d:
-        return 0.0
-    if x < b:
-        return (x - a) / (b - a) if b > a else 1.0
-    if x <= c:
-        return 1.0
-    return (d - x) / (d - c) if d > c else 1.0
-
-
-def score_temperature(mean_c: pd.Series, params: pd.Series) -> float:
-    """Average trapezoidal temperature score over the biweekly series."""
-    a = float(params["temp_min_tolerable_c"])
-    b = float(params["temp_opt_min_c"])
-    c = float(params["temp_opt_max_c"])
-    d = float(params["temp_max_tolerable_c"])
-    vals = [max(0.0, min(1.0, _trapezoid(t, a, b, c, d))) for t in mean_c if not pd.isna(t)]
-    if not vals:
-        return float("nan")
-    return float(np.mean(vals))
+    n_extreme = int((temp_score == 0.0).sum())
+    if n_extreme > 1:
+        return 0.0, ""
+    mean_score = float(temp_score.mean())
+    if n_extreme == 1:
+        return mean_score, (
+            "field validation recommended: temperature outside threshold in 1 period"
+        )
+    return mean_score, ""
 
 
 def score_elevation(elevation_m: float, params: pd.Series) -> float:
@@ -212,11 +209,11 @@ def classify_suitability(score: float) -> str:
 
 
 # Hard physiological/soil constraints: a zero score here caps the class to N
-# (they cannot be corrected in the field).
-HARD_LIMITING_FACTORS = ("elevacion", "textura", "temperatura")
+# (they cannot be corrected in the field). Elevation is intentionally excluded:
+# it is a proxy for temperature, which is measured directly.
+HARD_LIMITING_FACTORS = ("textura", "temperatura")
 
 LIMITING_MESSAGES = {
-    "elevacion": "elevation outside physiological range",
     "textura": "soil texture beyond universal limits",
     "temperatura": "temperature regime outside tolerable range",
     "pendiente": "slope exceeds limit; verify workability in the field",
@@ -307,6 +304,7 @@ def print_suitability_report(
     lat: float,
     lon: float,
     limiting_factor: str = "",
+    warning: str = "",
 ) -> None:
     """Prints a human-readable AHP suitability summary."""
     labels = {
@@ -335,68 +333,14 @@ def print_suitability_report(
     if limiting_factor:
         print(f"LIMITING FACTOR   : {limiting_factor} "
               f"({LIMITING_MESSAGES.get(limiting_factor, '')})")
+    if warning:
+        print(f"WARNING           : {warning}")
     print("=" * 78)
 
 
 # ---------------------------------------------------------------------------
-# Runner (regenerates inputs via the GEE modules, then scores)
+# Runner (runs the upstream stages, then scores)
 # ---------------------------------------------------------------------------
-
-def regenerate_inputs(
-    lat: float, lon: float, area_ha: float, output_dir: Path = DATABASES_DIR
-) -> Tuple[pd.DataFrame, Dict[str, float], pd.DataFrame, pd.DataFrame, float, pd.DataFrame]:
-    """
-    Regenerates all six input datasets (soil, terrain, temperature,
-    precipitation, SPEI, soil-hydraulic) and returns the structures the
-    scoring functions consume.
-
-    Earth Engine modules are imported lazily so the pure core stays GEE-free.
-    """
-    from precipitation_profile import (
-        get_precipitation_biweekly,
-        save_precipitation_profile,
-    )
-    from soil_hydraulics import calculate_hydraulic_properties
-    from soil_profile_area import (
-        get_soil_profile_area,
-        save_hydraulic_profile,
-        save_soil_profile,
-    )
-    from spei_profile import get_spei_biweekly, save_spei_profile
-    from temperature_profile import (
-        get_temperature_biweekly,
-        save_temperature_profile,
-    )
-    from terrain_profile import get_terrain_profile_area, save_terrain_profile
-
-    area_m = math.sqrt(area_ha * 10000) / 2
-
-    # Soil (raw for texture/pH/SOC + hydraulic for AWC).
-    soil_dict = get_soil_profile_area(lat, lon, area_m)
-    save_soil_profile(soil_dict, output_dir=str(output_dir))
-    soil_df = pd.DataFrame(soil_dict).T
-    df_hydric = calculate_hydraulic_properties(soil_dict)
-    save_hydraulic_profile(df_hydric, output_dir=str(output_dir))
-    awc_mm = float(df_hydric["AWC_layer_mm"].sum())
-
-    # Terrain.
-    terrain = get_terrain_profile_area(lat, lon, area_m)
-    save_terrain_profile(terrain, output_dir=str(output_dir))
-
-    # Temperature.
-    temp_df = get_temperature_biweekly(lat, lon, start_date="2016-01-01")
-    save_temperature_profile(temp_df, output_dir=str(output_dir))
-
-    # Precipitation.
-    precip_df = get_precipitation_biweekly(lat, lon, start_date="2016-01-01")
-    save_precipitation_profile(precip_df, output_dir=str(output_dir))
-
-    # SPEI.
-    spei_df = get_spei_biweekly(lat, lon, start_date="2016-01-01")
-    save_spei_profile(spei_df, output_dir=str(output_dir))
-
-    return soil_df, terrain, temp_df, precip_df, awc_mm, spei_df
-
 
 def main(
     lat: float,
@@ -416,8 +360,9 @@ def main(
         lon: Longitude of the point.
         crop: Crop identifier (must exist in crop_parameters).
         area_ha: Plot area in hectares (default 2).
-        regenerate: If True, call the GEE modules to (re)generate the input
-                    CSVs; if False, read the latest local CSVs instead.
+        regenerate: If True, run crop_viability and water_balance (GEE) to
+                    (re)generate their outputs; if False, read the latest
+                    per-crop CSVs instead.
         crop_params_path: Path to the crop parameters CSV.
         ahp_weights_path: Path to the AHP weights CSV.
         output_dir: Directory for the output CSV.
@@ -436,18 +381,24 @@ def main(
     # 1. Weights.
     weights_df = load_ahp_weights(ahp_weights_path)
 
-    # 2. Inputs.
+    # 2. Upstream outputs (crop_viability + water_balance).
     if regenerate:
-        soil_df, terrain, temp_df, precip_df, awc_mm, spei_df = regenerate_inputs(
-            lat, lon, area_ha, output_dir
+        cv_static_path, cv_temp_path = crop_viability.main(
+            lat, lon, crop, area_ha=area_ha, regenerate=True,
+            crop_params_path=crop_params_path, output_dir=output_dir,
+        )
+        wb_path = water_balance.main(
+            lat, lon, crop, regenerate=True,
+            crop_params_path=crop_params_path, output_dir=output_dir,
         )
     else:
-        soil_df = load_soil_profile(latest_csv(SOIL_PREFIX, output_dir))
-        terrain = load_terrain(latest_csv(TERRAIN_PREFIX, output_dir))
-        temp_df = load_temperature(latest_csv(TEMPERATURE_PREFIX, output_dir))
-        precip_df = load_precipitation(latest_csv(PRECIP_PREFIX, output_dir))
-        awc_mm = load_awc(latest_csv(SOIL_HYDRAULIC_PREFIX, output_dir))
-        spei_df = load_spei(latest_csv(SPEI_PREFIX, output_dir))
+        cv_static_path = _latest(f"crop_viability_{crop}-static-v*.csv", output_dir)
+        cv_temp_path = _latest(f"crop_viability_{crop}-temperature-v*.csv", output_dir)
+        wb_path = _latest(f"water_balance_labels_{crop}-v*.csv", output_dir)
+
+    static_df = pd.read_csv(cv_static_path)
+    temp_df = pd.read_csv(cv_temp_path)
+    wb_df = pd.read_csv(wb_path)
 
     # 3. Crop parameters; validate the requested crop.
     crop_params = load_crop_parameters(crop_params_path)
@@ -456,43 +407,53 @@ def main(
         raise ValueError(f"Unknown crop '{crop}'. Valid crops: {valid}")
     params = crop_params.loc[crop]
 
-    # 4. Aggregations shared by the static criteria.
-    soil_agg = soil_aggregates(soil_df)
+    # 4. Static values (single row of the static viability CSV).
+    s = static_df.iloc[0]
+    elevation_m = float(s["elevation_m"])
+    slope_deg = float(s["slope_deg"])
+    sand_pct = float(s["sand_0_60_pct"])
+    clay_pct = float(s["clay_0_60_pct"])
+    ph = float(s["ph_0_60"])
+    soc_pct = float(s["soc_0_60_pct"])
 
-    # 5. WRSI series for the water criterion.
-    merged = precip_df.merge(
-        spei_df[["label", "pet_mm", "spei_1m", "spei_3m", "spei_6m", "spei_12m"]],
-        on="label",
-        how="inner",
-    )
-    merged = merged.sort_values("label").reset_index(drop=True)
-    merged = merged.dropna(subset=["precip_total_mm"]).reset_index(drop=True)
-    wrsi_out, _, _ = compute_wrsi_series(
-        merged,
-        float(params["water_requirement_mm"]),
-        int(params["cycle_quincenas"]),
-        str(params["type"]),
-        awc_mm,
-    )
+    # 5. Score every sub-criterion (temperature reads its per-period column).
+    warnings = []
+    temp_score, temp_warning = evaluate_temperature_score(temp_df["temp_score"])
+    if temp_warning:
+        warnings.append(temp_warning)
 
-    # 6. Score every sub-criterion.
+    # Elevation is a PROXY for temperature (already measured directly), so it
+    # is a soft criterion: it lowers the score but never hard-fails. When it
+    # falls outside the literature range, flag a local-validation warning.
+    elev_lo = float(params["elev_min_m"])
+    elev_hi = float(params["elev_max_m"])
+    if elevation_m < elev_lo:
+        warnings.append(
+            f"elevation below literature range ({elevation_m:.1f} m < {elev_lo:.0f} m); "
+            "validate with local conditions"
+        )
+    elif elevation_m > elev_hi:
+        warnings.append(
+            f"elevation above literature range ({elevation_m:.1f} m > {elev_hi:.0f} m); "
+            "validate with local conditions"
+        )
+    warning = "; ".join(warnings)
+
     scores = {
-        "temperatura": score_temperature(temp_df["mean_C"], params),
-        "elevacion": score_elevation(terrain["elevation_m"], params),
-        "pendiente": score_slope(terrain["slope_deg"], params),
-        "textura": score_texture(
-            soil_agg["sand_0_60_pct"], soil_agg["clay_0_60_pct"], params
-        ),
-        "ph": score_ph(soil_agg["ph_0_60"], params),
-        "soc": score_soc(soil_agg["soc_0_60_pct"], params),
-        "wrsi": score_water(wrsi_out["deficit_pct"]),
+        "temperatura": temp_score,
+        "elevacion": score_elevation(elevation_m, params),
+        "pendiente": score_slope(slope_deg, params),
+        "textura": score_texture(sand_pct, clay_pct, params),
+        "ph": score_ph(ph, params),
+        "soc": score_soc(soc_pct, params),
+        "wrsi": score_water(wb_df["deficit_pct"]),
     }
 
-    # 7. Weighted aggregation + FAO class with limiting-factor rule.
+    # 6. Weighted aggregation + FAO class with limiting-factor rule.
     suitability = compute_suitability(scores, weights_df)
     suitability_class, limiting_factor = apply_limiting_factor(suitability, scores)
 
-    # 8. Build the output row and save.
+    # 7. Build the output row and save.
     row = {
         "crop": crop,
         "common_name": params["common_name"],
@@ -507,11 +468,13 @@ def main(
         "suitability_score": round(suitability, 4),
         "suitability_class": suitability_class,
         "limiting_factor": limiting_factor,
+        "warning": warning,
     }
     out_df = pd.DataFrame([row])
     out_path = save_suitability_report(out_df, crop, output_dir=output_dir)
     print_suitability_report(
-        params, scores, suitability, suitability_class, lat, lon, limiting_factor
+        params, scores, suitability, suitability_class, lat, lon,
+        limiting_factor, warning,
     )
 
     return out_path
