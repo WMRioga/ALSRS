@@ -33,12 +33,12 @@ Evaluation rules (see README_crops.md):
       counted.
 
 Output:
-    databases/crop_viability_{crop}-static-vYYMMDDHHMMSS.csv      (one row:
-    crop identity + one status/detail pair per static filter) and
-    databases/crop_viability_{crop}-temperature-vYYMMDDHHMMSS.csv (one row per
-    biweekly period, temperature analysis), plus a human-readable console
-    report listing the static parameters that fail, the number of temperature
-    non-aptitude peaks and the final viability.
+    databases/crop_viability_{crop}-static-vYYMMDDHHMMSS.csv (one row: crop
+    identity + one status/detail pair per static filter) and
+    databases/temperature_biweekly-vYYMMDDHHMMSS.csv (raw temperature enriched
+    with crop, temp_status, temp_detail, temp_score), plus a human-readable
+    console report listing the static parameters that fail, the number of
+    temperature non-aptitude peaks and the final viability.
 
 Dependencies:
     - pandas
@@ -58,8 +58,11 @@ import pandas as pd
 
 # Make the local modules importable regardless of the working directory.
 _SCRIPT_DIR = Path(__file__).resolve().parent
-if str(_SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(_SCRIPT_DIR))
+_PROJECT_ROOT = _SCRIPT_DIR.parent
+for _p in (_SCRIPT_DIR, _PROJECT_ROOT / "common", _PROJECT_ROOT / "extraction",
+           _PROJECT_ROOT / "analysis", _PROJECT_ROOT / "mapping"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 # soil_hydraulics has no Earth Engine dependency (pandas only), so it is safe
 # to import at module level. It provides the SoilGrids unit-conversion factors
@@ -72,7 +75,7 @@ from soil_hydraulics import LAYER_THICKNESS_CM, SOILGRIDS_CONVERSION
 # ---------------------------------------------------------------------------
 
 # Project folders (relative to this file).
-PROJECT_ROOT = _SCRIPT_DIR.parents[1]
+PROJECT_ROOT = _SCRIPT_DIR.parent
 DATABASES_DIR = PROJECT_ROOT / "databases"
 
 # SoilGrids stores pH in water as pH*10 (integer); divide to get pH units.
@@ -199,7 +202,11 @@ def load_temperature(path: Path) -> pd.DataFrame:
     """
     df = pd.read_csv(path)
     df["mean_C"] = pd.to_numeric(df["mean_C"], errors="coerce")
-    return df[["period_start", "period_end", "label", "mean_C"]]
+    cols = ["period_start", "period_end", "label", "mean_C"]
+    for extra in ["std_C", "var_C"]:
+        if extra in df.columns:
+            cols.append(extra)
+    return df[cols]
 
 
 # ---------------------------------------------------------------------------
@@ -600,10 +607,12 @@ def build_temperature_frame(
     Returns:
         pandas.DataFrame with one row per biweekly period.
     """
-    out = series_df[
-        ["period_start", "period_end", "label", "mean_C",
-         "temp_status", "temp_detail", "temp_score"]
-    ].copy()
+    cols = ["period_start", "period_end", "label", "mean_C"]
+    for extra in ["std_C", "var_C"]:
+        if extra in series_df.columns:
+            cols.append(extra)
+    cols += ["temp_status", "temp_detail", "temp_score"]
+    out = series_df[cols].copy()
     out["temp_score"] = out["temp_score"].round(4)
     out.insert(0, "crop", params.name)
     return out
@@ -620,8 +629,9 @@ def save_viability_reports(
     output_dir: Path = DATABASES_DIR,
 ) -> Tuple[Path, Path]:
     """
-    Saves the two viability CSVs (static + temperature) with a shared
-    timestamp so they stay paired for the same run.
+    Saves the static viability CSV and the enriched temperature CSV
+    (``temperature_biweekly`` with the crop analysis columns) with a shared
+    timestamp.
 
     Args:
         static_df: Single-row static frame (build_static_frame).
@@ -636,7 +646,7 @@ def save_viability_reports(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     static_path = output_dir / f"crop_viability_{crop}-static-v{timestamp}.csv"
-    temp_path = output_dir / f"crop_viability_{crop}-temperature-v{timestamp}.csv"
+    temp_path = output_dir / f"temperature_biweekly-v{timestamp}.csv"
 
     static_df.to_csv(static_path, index=False)
     temp_df.to_csv(temp_path, index=False)
@@ -764,10 +774,7 @@ def regenerate_inputs(
     # Lazy imports: keep the GEE dependency out of the pure core.
     from soil_profile_area import get_soil_profile_area, save_soil_profile
     from terrain_profile import get_terrain_profile_area, save_terrain_profile
-    from temperature_profile import (
-        get_temperature_biweekly,
-        save_temperature_profile,
-    )
+    from temperature_profile import get_temperature_biweekly
 
     # Buffer radius: same formula used across terrain/soil profile scripts.
     area_meters = math.sqrt(area_ha * 10000) / 2
@@ -781,9 +788,8 @@ def regenerate_inputs(
     terrain_dict = get_terrain_profile_area(lat, lon, area_meters)
     save_terrain_profile(terrain_dict, output_dir=str(output_dir))
 
-    # --- Biweekly temperature ---
+    # --- Biweekly temperature (saved later, enriched with the crop analysis) ---
     temp_df = get_temperature_biweekly(lat, lon, start_date="2016-01-01")
-    save_temperature_profile(temp_df, output_dir=str(output_dir))
 
     return soil_df, terrain_dict, temp_df
 

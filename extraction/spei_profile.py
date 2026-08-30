@@ -78,6 +78,15 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
+# Make the local modules importable regardless of the working directory.
+import sys
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = _SCRIPT_DIR.parent
+for _p in (_SCRIPT_DIR, _PROJECT_ROOT / "common", _PROJECT_ROOT / "extraction",
+           _PROJECT_ROOT / "analysis", _PROJECT_ROOT / "mapping"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+
 from period_utils import build_biweekly_periods
 
 # Google Cloud project linked to Earth Engine. Required since Earth Engine

@@ -55,8 +55,11 @@ import pandas as pd
 
 # Make the local modules importable regardless of the working directory.
 _SCRIPT_DIR = Path(__file__).resolve().parent
-if str(_SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(_SCRIPT_DIR))
+_PROJECT_ROOT = _SCRIPT_DIR.parent
+for _p in (_SCRIPT_DIR, _PROJECT_ROOT / "common", _PROJECT_ROOT / "extraction",
+           _PROJECT_ROOT / "analysis", _PROJECT_ROOT / "mapping"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 # Upstream pipeline stages (imported as modules to call their main()).
 import crop_viability
@@ -393,7 +396,7 @@ def main(
         )
     else:
         cv_static_path = _latest(f"crop_viability_{crop}-static-v*.csv", output_dir)
-        cv_temp_path = _latest(f"crop_viability_{crop}-temperature-v*.csv", output_dir)
+        cv_temp_path = _latest("temperature_biweekly-v*.csv", output_dir)
         wb_path = _latest(f"water_balance_labels_{crop}-v*.csv", output_dir)
 
     static_df = pd.read_csv(cv_static_path)
