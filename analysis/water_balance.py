@@ -32,14 +32,20 @@ Method (FAO bucket model, biweekly):
       duration for annual):
           WRSI(t) = sum(AET over window) / sum(ETc over window)
           deficit(t) = (1 - WRSI(t)) * 100
-    - Future labels: WRSI(t+1) ... WRSI(t+12) and their deficits, plus a
-      suggestion from the WORST deficit in the next 12 biweekly periods:
-          0-15% -> LOW, 15-30% -> MEDIUM, 30-50% -> HIGH, >50% -> NOT_SUITABLE.
+    - Forecast targets (nested accumulated future deficits): for each biweek
+      t, the deficit accumulated over the NEXT 1, 3 and 6 months:
+          future_deficit_H(t) = sum(ETc - AET over [t+1 .. t+H]) /
+                                sum(ETc over [t+1 .. t+H])
+      with H = 2 (1m), 6 (3m) and 12 (6m) biweeks. These are genuinely
+      forward-looking (no overlap with the features) and are the ML targets.
+    - Irrigation suggestion derived from the 6-month accumulated deficit:
+          <=0.15 -> LOW, <=0.30 -> MEDIUM, <=0.50 -> HIGH, >0.50 -> NOT_SUITABLE.
 
 Output:
     databases/water_balance_labels_{crop}-vYYMMDDHHMMSS.csv with features
-    (AWC_mm, spei_1m/3m/6m/12m, P_acum_mm, Storage_mm, WRSI_actual) and labels
-    (WRSI_t1 ... WRSI_t12, deficit_t1 ... deficit_t12, suggestion).
+    (AWC_mm, spei_1m/3m/6m/12m, P_acum_mm, Storage_mm, WRSI, deficit_pct),
+    forecast targets (future_deficit_1m/3m/6m and their mm counterparts) and
+    the derived suggestion.
 
 Dependencies:
     - numpy, pandas
@@ -81,8 +87,14 @@ SPEI_PREFIX = "spei_biweekly"
 # Biweekly periods used for the storage warm-up (2 months).
 WARMUP_PERIODS = 4
 
-# Prediction horizon for the suggestion and future labels (always 6 months).
-HORIZON = 12
+# Nested forecast horizons: (output suffix, number of future biweeks).
+# 2 biweeks = 1 month, 6 = 3 months, 12 = 6 months. Each target is the deficit
+# accumulated over that future window (fraction 0-1).
+FORECAST_HORIZONS = [
+    ("future_deficit_1m", 2),
+    ("future_deficit_3m", 6),
+    ("future_deficit_6m", 12),
+]
 
 # Suggestion classes (English).
 LOW = "LOW"
@@ -261,8 +273,8 @@ def compute_wrsi_series(
 
     Returns:
         tuple: (out_df, window, storage_init) where ``out_df`` is ``df`` plus
-        columns ``ETc_mm``, ``Storage_mm``, ``P_acum_mm``, ``WRSI_actual`` and
-        ``deficit_pct``.
+        columns ``ETc_mm``, ``AET_mm``, ``Storage_mm``, ``P_acum_mm``, ``WRSI``
+        and ``deficit_pct``.
     """
     window = 24 if crop_type == "perennial" else int(cycle_quincenas)
 
@@ -287,38 +299,84 @@ def compute_wrsi_series(
 
     out = df.copy()
     out["ETc_mm"] = etc
+    out["AET_mm"] = aet
     out["Storage_mm"] = storage
     out["P_acum_mm"] = p_acum
-    out["WRSI_actual"] = wrsi
+    out["WRSI"] = wrsi
     out["deficit_pct"] = deficit
     return out, window, storage_init
 
 
-def classify_suggestion(worst_deficit: float) -> str:
+def classify_suggestion(deficit_fraction: float) -> str:
     """
-    Maps the worst future deficit to an irrigation suggestion class.
+    Maps the 6-month accumulated water deficit (fraction 0-1) to an
+    irrigation-need class.
 
-    0-15% -> LOW, 15-30% -> MEDIUM, 30-50% -> HIGH, >50% -> NOT_SUITABLE.
+    <=0.15 -> LOW, <=0.30 -> MEDIUM, <=0.50 -> HIGH, >0.50 -> NOT_SUITABLE.
     Returns an empty string when there is no future data (NaN).
     """
-    if pd.isna(worst_deficit):
+    if pd.isna(deficit_fraction):
         return ""
-    if worst_deficit <= 15.0:
+    if deficit_fraction <= 0.15:
         return LOW
-    if worst_deficit <= 30.0:
+    if deficit_fraction <= 0.30:
         return MEDIUM
-    if worst_deficit <= 50.0:
+    if deficit_fraction <= 0.50:
         return HIGH
     return NOT_SUITABLE
+
+
+def _accumulate_future_deficit(
+    etc: np.ndarray, aet: np.ndarray, horizon: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Accumulates the water deficit over the next ``horizon`` biweeks, forward.
+
+    For each period t, sums (ETc - AET) and ETc over [t+1 .. t+horizon]:
+
+        fraction(t) = sum(ETc - AET) / sum(ETc)
+        mm(t)       = sum(ETc - AET)
+
+    Rows without ``horizon`` future biweeks (or with any NaN in the window)
+    stay NaN.
+
+    Args:
+        etc: Crop evapotranspiration per period (mm).
+        aet: Actual evapotranspiration per period (mm).
+        horizon: Number of future biweeks to accumulate.
+
+    Returns:
+        tuple: (fraction, mm) arrays, same length as ``etc``.
+    """
+    n = len(etc)
+    fraction = np.full(n, np.nan, dtype=float)
+    mm = np.full(n, np.nan, dtype=float)
+
+    for t in range(n):
+        end = t + horizon
+        if end >= n:
+            break
+        etc_win = etc[t + 1:end + 1]
+        aet_win = aet[t + 1:end + 1]
+        if np.isnan(etc_win).any() or np.isnan(aet_win).any():
+            continue
+        denom = float(np.sum(etc_win))
+        numer = float(np.sum(etc_win - aet_win))
+        if denom > 0:
+            fraction[t] = numer / denom
+            mm[t] = numer
+    return fraction, mm
 
 
 def build_labeled_dataset(
     out: pd.DataFrame, crop: str, awc_mm: float
 ) -> pd.DataFrame:
     """
-    Builds the final labeled frame: features at time t plus the future labels
-    (WRSI_t1..t12, deficit_t1..t12) and the suggestion, then keeps only rows
-    whose features are complete (no NaN).
+    Builds the labeled frame: features at time t plus the nested future
+    targets (future_deficit_1m/3m/6m as a fraction 0-1, plus their mm
+    counterparts) and the irrigation suggestion derived from the 6-month
+    deficit. Keeps only rows whose features are complete AND that have a valid
+    6-month target (so the tail without enough future data is dropped).
 
     Args:
         out: DataFrame from compute_wrsi_series().
@@ -328,45 +386,39 @@ def build_labeled_dataset(
     Returns:
         pandas.DataFrame with one row per valid (fully-featured) period.
     """
-    wrsi = out["WRSI_actual"].to_numpy(dtype=float)
-    deficit = out["deficit_pct"].to_numpy(dtype=float)
-    n = len(out)
+    etc = out["ETc_mm"].to_numpy(dtype=float)
+    aet = out["AET_mm"].to_numpy(dtype=float)
 
-    # Future labels: value at t+k.
-    for k in range(1, HORIZON + 1):
-        shifted_w = np.full(n, np.nan, dtype=float)
-        shifted_d = np.full(n, np.nan, dtype=float)
-        if k < n:
-            shifted_w[:-k] = wrsi[k:]
-            shifted_d[:-k] = deficit[k:]
-        out[f"WRSI_t{k}"] = shifted_w
-        out[f"deficit_t{k}"] = shifted_d
+    # Nested accumulated future deficits (the ML targets).
+    for name, horizon in FORECAST_HORIZONS:
+        fraction, mm = _accumulate_future_deficit(etc, aet, horizon)
+        out[name] = fraction
+        out[f"{name}_mm"] = mm
 
-    deficit_cols = [f"deficit_t{k}" for k in range(1, HORIZON + 1)]
-    out["suggestion"] = (
-        out[deficit_cols].max(axis=1, skipna=True).apply(classify_suggestion)
-    )
+    # Irrigation suggestion derived from the 6-month target (not predicted).
+    out["suggestion"] = out["future_deficit_6m"].apply(classify_suggestion)
 
     # Constant identity columns.
     out["crop"] = crop
     out["AWC_mm"] = round(awc_mm, 2)
 
-    # Keep only rows where every feature is defined.
+    # Keep only rows where every feature is defined and the 6-month target
+    # exists (drops the tail with no future data).
     feature_cols = [
         "spei_1m", "spei_3m", "spei_6m", "spei_12m",
-        "P_acum_mm", "Storage_mm", "WRSI_actual",
+        "P_acum_mm", "Storage_mm", "WRSI",
     ]
-    labeled = out.dropna(subset=feature_cols).copy()
+    labeled = out.dropna(subset=feature_cols + ["future_deficit_6m"]).copy()
 
     # Column order for the CSV.
     output_cols = (
         ["crop", "period_start", "period_end", "label", "AWC_mm"]
         + ["spei_1m", "spei_3m", "spei_6m", "spei_12m"]
-        + ["P_acum_mm", "Storage_mm", "WRSI_actual", "deficit_pct"]
-        + [f"WRSI_t{k}" for k in range(1, HORIZON + 1)]
-        + [f"deficit_t{k}" for k in range(1, HORIZON + 1)]
-        + ["suggestion"]
+        + ["P_acum_mm", "Storage_mm", "WRSI", "deficit_pct"]
     )
+    for name, _ in FORECAST_HORIZONS:
+        output_cols += [name, f"{name}_mm"]
+    output_cols += ["suggestion"]
     labeled = labeled[output_cols]
 
     # Round numeric columns for a clean CSV.
@@ -374,10 +426,10 @@ def build_labeled_dataset(
         labeled[col] = labeled[col].round(2)
     for col in ["spei_1m", "spei_3m", "spei_6m", "spei_12m"]:
         labeled[col] = labeled[col].round(3)
-    for col in ["WRSI_actual"] + [f"WRSI_t{k}" for k in range(1, HORIZON + 1)]:
-        labeled[col] = labeled[col].round(4)
-    for col in [f"deficit_t{k}" for k in range(1, HORIZON + 1)]:
-        labeled[col] = labeled[col].round(2)
+    labeled["WRSI"] = labeled["WRSI"].round(4)
+    for name, _ in FORECAST_HORIZONS:
+        labeled[name] = labeled[name].round(4)
+        labeled[f"{name}_mm"] = labeled[f"{name}_mm"].round(2)
 
     return labeled
 
@@ -445,9 +497,9 @@ def print_report(
     if len(labeled):
         print(f"Date range     : {labeled['label'].iloc[0]} -> "
               f"{labeled['label'].iloc[-1]}")
-        print(f"WRSI (actual)  : min={labeled['WRSI_actual'].min():.3f}, "
-              f"mean={labeled['WRSI_actual'].mean():.3f}, "
-              f"max={labeled['WRSI_actual'].max():.3f}")
+        print(f"WRSI (current)  : min={labeled['WRSI'].min():.3f}, "
+              f"mean={labeled['WRSI'].mean():.3f}, "
+              f"max={labeled['WRSI'].max():.3f}")
     print("-" * 78)
     if len(labeled):
         print("Suggestion distribution:")

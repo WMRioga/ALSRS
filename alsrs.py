@@ -155,7 +155,7 @@ def print_consolidated_report(
 
     # Water / WRSI.
     print("\nWater (WRSI):")
-    print(f"  Mean WRSI    : {wb['WRSI_actual'].mean():.3f}")
+    print(f"  Mean WRSI    : {wb['WRSI'].mean():.3f}")
     dist = (
         wb["suggestion"].replace("", pd.NA).dropna().value_counts(normalize=True) * 100
     )

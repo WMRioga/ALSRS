@@ -10,7 +10,7 @@ For each point it:
     1. runs ``crop_viability`` and ``water_balance`` (downloads + computes),
     2. joins ``water_balance_labels`` + ``temperature_biweekly`` +
        ``precipitation_biweekly`` + ``spei_biweekly`` on the biweekly label,
-    3. derives the seasonal position (``mes`` 1-12, ``quincena`` 1-2) from the
+    3. derives the seasonal position (``month`` 1-12, ``biweek`` 1-2) from the
        label,
     4. appends the resulting rows (features + future-deficit labels) to the
        output CSV.
@@ -34,10 +34,12 @@ concurrent-request limits. After all shards finish, merge them:
     python ml/collect_training.py --merge --nshards 4
 
 Output columns (approved ML schema):
-    point_id, lat, lon, crop, period_start, period_end, label, mes, quincena,
+    point_id, lat, lon, crop, period_start, period_end, label, month, biweek,
     mean_C, std_C, precip_total_mm, precip_rainy_days, pet_mm,
     spei_1m, spei_3m, spei_6m, spei_12m, AWC_mm, Storage_mm, P_acum_mm,
-    WRSI_actual, deficit_pct,  deficit_t1 ... deficit_t12,  suggestion
+    WRSI, deficit_pct,  future_deficit_1m, future_deficit_3m,
+    future_deficit_6m,  future_deficit_1m_mm, future_deficit_3m_mm,
+    future_deficit_6m_mm,  suggestion
 
 Note: to restart a shard from scratch, delete BOTH its checkpoint JSON and its
 output CSV (they are kept in sync automatically).
@@ -136,9 +138,10 @@ def build_ml_rows(
 
     Features come from: water_balance_labels (AWC, SPEI, storage, WRSI,
     deficit) + temperature (mean_C, std_C) + precipitation (total, rainy days)
-    + SPEI (pet_mm). Seasonal position (mes, quincena) is derived from label.
-    Labels are the 12 future deficits (deficit_t1..t12); suggestion is kept for
-    validation (it is derived, not predicted).
+    + SPEI (pet_mm). Seasonal position (month, biweek) is derived from label.
+    Labels are the 3 nested future accumulated deficits
+    (future_deficit_1m/3m/6m, fraction 0-1); their mm counterparts and
+    suggestion are kept for reference/validation (derived, not predicted).
     """
     df = wb_df.merge(
         temp_df[["label", "mean_C", "std_C"]], on="label", how="inner"
@@ -151,9 +154,9 @@ def build_ml_rows(
         spei_df[["label", "pet_mm"]], on="label", how="inner"
     )
 
-    # Seasonal position: "2016-01_Q1" -> mes=1, quincena=1.
-    df["mes"] = df["label"].str.split("-").str[1].str.split("_").str[0].astype(int)
-    df["quincena"] = df["label"].str.split("_").str[1].map({"Q1": 1, "Q2": 2})
+    # Seasonal position: "2016-01_Q1" -> month=1, biweek=1.
+    df["month"] = df["label"].str.split("-").str[1].str.split("_").str[0].astype(int)
+    df["biweek"] = df["label"].str.split("_").str[1].map({"Q1": 1, "Q2": 2})
 
     # Point identifiers.
     df.insert(0, "point_id", point_id)
@@ -163,14 +166,20 @@ def build_ml_rows(
     feature_cols = [
         "mean_C", "std_C", "precip_total_mm", "precip_rainy_days", "pet_mm",
         "spei_1m", "spei_3m", "spei_6m", "spei_12m",
-        "AWC_mm", "Storage_mm", "P_acum_mm", "WRSI_actual", "deficit_pct",
+        "AWC_mm", "Storage_mm", "P_acum_mm", "WRSI", "deficit_pct",
     ]
-    label_cols = [f"deficit_t{k}" for k in range(1, 13)]
+    target_cols = [
+        "future_deficit_1m", "future_deficit_3m", "future_deficit_6m",
+    ]
+    companion_cols = [
+        "future_deficit_1m_mm", "future_deficit_3m_mm", "future_deficit_6m_mm",
+    ]
     order = (
         ["point_id", "lat", "lon", "crop", "period_start", "period_end",
-         "label", "mes", "quincena"]
+         "label", "month", "biweek"]
         + feature_cols
-        + label_cols
+        + target_cols
+        + companion_cols
         + ["suggestion"]
     )
     return df[order]
