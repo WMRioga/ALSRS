@@ -38,7 +38,8 @@ Method (FAO bucket model, biweekly):
                                 sum(ETc over [t+1 .. t+H])
       with H = 2 (1m), 6 (3m) and 12 (6m) biweeks. These are genuinely
       forward-looking (no overlap with the features) and are the ML targets.
-    - Irrigation suggestion derived from the 6-month accumulated deficit:
+    - Irrigation suggestion = the WORST class among the three horizons (each
+      accumulated deficit classified):
           <=0.15 -> LOW, <=0.30 -> MEDIUM, <=0.50 -> HIGH, >0.50 -> NOT_SUITABLE.
 
 Output:
@@ -307,10 +308,14 @@ def compute_wrsi_series(
     return out, window, storage_init
 
 
+# Severity ranking of the irrigation-need classes (worst = highest).
+_SUGGESTION_RANK = {LOW: 0, MEDIUM: 1, HIGH: 2, NOT_SUITABLE: 3}
+
+
 def classify_suggestion(deficit_fraction: float) -> str:
     """
-    Maps the 6-month accumulated water deficit (fraction 0-1) to an
-    irrigation-need class.
+    Maps an accumulated water deficit (fraction 0-1) to an irrigation-need
+    class.
 
     <=0.15 -> LOW, <=0.30 -> MEDIUM, <=0.50 -> HIGH, >0.50 -> NOT_SUITABLE.
     Returns an empty string when there is no future data (NaN).
@@ -324,6 +329,23 @@ def classify_suggestion(deficit_fraction: float) -> str:
     if deficit_fraction <= 0.50:
         return HIGH
     return NOT_SUITABLE
+
+
+def worst_suggestion(*classes: str) -> str:
+    """
+    Returns the most severe irrigation-need class among the given ones.
+
+    Severity order: LOW < MEDIUM < HIGH < NOT_SUITABLE. An empty string is
+    ignored; if every class is empty, an empty string is returned.
+    """
+    worst = ""
+    worst_rank = -1
+    for cls in classes:
+        rank = _SUGGESTION_RANK.get(cls, -1)
+        if rank > worst_rank:
+            worst_rank = rank
+            worst = cls
+    return worst
 
 
 def _accumulate_future_deficit(
@@ -374,9 +396,9 @@ def build_labeled_dataset(
     """
     Builds the labeled frame: features at time t plus the nested future
     targets (future_deficit_1m/3m/6m as a fraction 0-1, plus their mm
-    counterparts) and the irrigation suggestion derived from the 6-month
-    deficit. Keeps only rows whose features are complete AND that have a valid
-    6-month target (so the tail without enough future data is dropped).
+    counterparts) and the irrigation suggestion = the WORST class among the
+    three horizons. Keeps only rows whose features are complete AND that have
+    a valid 6-month target (so the tail without enough future data is dropped).
 
     Args:
         out: DataFrame from compute_wrsi_series().
@@ -395,8 +417,18 @@ def build_labeled_dataset(
         out[name] = fraction
         out[f"{name}_mm"] = mm
 
-    # Irrigation suggestion derived from the 6-month target (not predicted).
-    out["suggestion"] = out["future_deficit_6m"].apply(classify_suggestion)
+    # Irrigation suggestion = worst class among the three horizons, derived
+    # from the accumulated deficits (not predicted).
+    horizon_class_cols = []
+    for name, _ in FORECAST_HORIZONS:
+        cls_col = f"_{name}_class"
+        out[cls_col] = out[name].apply(classify_suggestion)
+        horizon_class_cols.append(cls_col)
+    out["suggestion"] = [
+        worst_suggestion(*row) for row in out[horizon_class_cols].itertuples(
+            index=False, name=None
+        )
+    ]
 
     # Constant identity columns.
     out["crop"] = crop

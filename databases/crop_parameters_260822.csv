@@ -1,8 +1,8 @@
-crop,common_name,type,temp_min_tolerable_c,temp_opt_min_c,temp_opt_max_c,temp_max_tolerable_c,elev_min_m,elev_max_m,slope_max_deg,ph_min,ph_max,clay_max_pct,sand_max_pct,soc_min_pct,water_requirement_mm,cycle_quincenas,root_depth_cm
-sugarcane,Sugarcane,perennial,15,20,35,38,0,1500,8,5.5,7.5,50,70,0.5,2000,24,100
-cacao_ccn51,CCN-51 Cocoa,perennial,15,18,32,35,0,800,8,5.5,7.0,50,70,0.5,1500,24,70
-arabica_coffee,Arabica Coffee,perennial,10,15,24,30,800,2000,15,5.0,6.5,50,70,0.5,1400,24,80
-plantain,Plantain,perennial,10,18,32,38,0,1000,8,5.5,7.0,50,70,0.5,1500,24,60
-wheat,Wheat,annual,5,10,24,30,0,1000,8,5.5,7.5,50,70,0.5,550,9,110
-sorghum,Sorghum,annual,10,15,35,40,0,1000,8,5.5,8.0,50,70,0.5,550,8,110
-canola,Canola,annual,5,10,25,30,0,800,8,5.5,7.5,50,70,0.5,475,9,100
+crop,common_name,type,temp_min_tolerable_c,temp_opt_min_c,temp_opt_max_c,temp_max_tolerable_c,elev_min_m,elev_max_m,slope_max_deg,ph_min,ph_max,clay_max_pct,sand_max_pct,soc_min_pct,water_requirement_mm,max_consecutive_dry_months,cycle_quincenas,root_depth_cm
+sugarcane,Sugarcane,perennial,15,20,35,38,0,1500,8,5.5,7.5,50,70,0.5,2000,3,24,100
+cacao_ccn51,CCN-51 Cocoa,perennial,15,18,32,35,0,800,8,5.5,7.0,50,70,0.5,1500,3,24,70
+arabica_coffee,Arabica Coffee,perennial,10,15,24,30,800,2000,15,5.0,6.5,50,70,0.5,1400,3,24,80
+plantain,Plantain,perennial,10,18,32,38,0,1000,8,5.5,7.0,50,70,0.5,1500,2,24,60
+wheat,Wheat,annual,5,10,24,30,0,1000,8,5.5,7.5,50,70,0.5,550,3,9,110
+sorghum,Sorghum,annual,10,15,35,40,0,1000,8,5.5,8.0,50,70,0.5,550,5,8,110
+canola,Canola,annual,5,10,25,30,0,800,8,5.5,7.5,50,70,0.5,475,3,9,100

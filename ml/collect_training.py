@@ -39,7 +39,7 @@ Output columns (approved ML schema):
     spei_1m, spei_3m, spei_6m, spei_12m, AWC_mm, Storage_mm, P_acum_mm,
     WRSI, deficit_pct,  future_deficit_1m, future_deficit_3m,
     future_deficit_6m,  future_deficit_1m_mm, future_deficit_3m_mm,
-    future_deficit_6m_mm,  suggestion
+    future_deficit_6m_mm,  suggestion,  oni
 
 Note: to restart a shard from scratch, delete BOTH its checkpoint JSON and its
 output CSV (they are kept in sync automatically).
@@ -67,6 +67,7 @@ for _p in (_PROJECT_ROOT / "common", _PROJECT_ROOT / "extraction",
 
 import crop_viability
 import water_balance
+import oni_profile
 from crop_viability import DATABASES_DIR
 
 
@@ -227,9 +228,13 @@ def merge_shards(crop: str, nshards: int) -> None:
     merged = pd.concat(frames, ignore_index=True).drop_duplicates(
         subset=["point_id", "label"], keep="first"
     )
+
+    # Add the ONI/ENSO feature (global monthly series joined by date).
+    merged = oni_profile.add_oni_column(merged)
+
     merged.to_csv(_final_output(crop), index=False)
     print(f"Merged {len(frames)} shard(s) -> {_final_output(crop).name} "
-          f"({len(merged)} rows)")
+          f"({len(merged)} rows, ONI feature added)")
 
 
 # ---------------------------------------------------------------------------

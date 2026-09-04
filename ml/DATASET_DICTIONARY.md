@@ -72,7 +72,7 @@ crop parameters from `databases/crop_parameters_260822.csv`.
 | 26 | `future_deficit_1m_mm` | Companion of #23 in mm (numerator `Σ(ETc−AET)`). **Not a target.** | Yes |
 | 27 | `future_deficit_3m_mm` | Companion of #24 in mm. **Not a target.** | Yes |
 | 28 | `future_deficit_6m_mm` | Companion of #25 in mm. **Not a target.** | Yes |
-| 29 | `suggestion` | Irrigation-need class derived from `future_deficit_6m`: LOW (≤0.15), MEDIUM (≤0.30), HIGH (≤0.50), NOT_SUITABLE (>0.50). **Derived, not predicted.** | Yes |
+| 29 | `suggestion` | Irrigation-need class = the **worst (most severe) class among the three horizons** (`future_deficit_1m/3m/6m`), each classified with LOW (≤0.15), MEDIUM (≤0.30), HIGH (≤0.50), NOT_SUITABLE (>0.50). Severity order: LOW < MEDIUM < HIGH < NOT_SUITABLE. **Derived, not predicted.** | Yes |
 
 ---
 

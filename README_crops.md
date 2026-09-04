@@ -26,6 +26,7 @@ The parameters are stored in `crop_parameters.csv` with the following structure:
 | `sand_max_pct` | Maximum sand content (universal physical limit) | % |
 | `soc_min_pct` | Minimum soil organic carbon | % |
 | `water_requirement_mm` | Total crop water requirement per cycle | mm |
+| `max_consecutive_dry_months` | Maximum consecutive dry months (<100 mm/month) the crop tolerates before severe damage | months |
 | `cycle_quincenas` | Crop cycle duration in biweekly periods | quincenas (14 days each) |
 | `root_depth_cm` | Effective root depth for AWC calculation | cm |
 
@@ -86,6 +87,7 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 - **Slope max:** 8°
 - **pH:** 5.5-7.5
 - **Water requirement:** 2000 mm/cycle
+- **Drought tolerance:** 3 consecutive dry months (<100 mm/month)
 - **Cycle:** 24 quincenas (12 months)
 - **Root depth:** 100 cm
 - **Sources:** Doorenbos & Kassam (1979); Inman-Bamber & Smith (2005)
@@ -97,6 +99,7 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 - **Slope max:** 8°
 - **pH:** 5.5-7.0
 - **Water requirement:** 1500 mm/cycle
+- **Drought tolerance:** 3 consecutive dry months (<100 mm/month)
 - **Cycle:** 24 quincenas (12 months)
 - **Root depth:** 70 cm
 - **Sources:** Carr & Lockwood (2011); ICCO (2017)
@@ -108,6 +111,7 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 - **Slope max:** 15°
 - **pH:** 5.0-6.5
 - **Water requirement:** 1400 mm/cycle
+- **Drought tolerance:** 3 consecutive dry months (<100 mm/month)
 - **Cycle:** 24 quincenas (12 months)
 - **Root depth:** 80 cm
 - **Sources:** DaMatta & Ramalho (2006); Cenicafé (2016)
@@ -119,6 +123,7 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 - **Slope max:** 8°
 - **pH:** 5.5-7.0
 - **Water requirement:** 1500 mm/cycle
+- **Drought tolerance:** 2 consecutive dry months (<100 mm/month)
 - **Cycle:** 24 quincenas (12 months)
 - **Root depth:** 60 cm
 - **Sources:** Doorenbos & Kassam (1979); FAO 56 (Allen et al., 1998)
@@ -130,6 +135,7 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 - **Slope max:** 8°
 - **pH:** 5.5-7.5
 - **Water requirement:** 550 mm/cycle
+- **Drought tolerance:** 3 consecutive dry months (<100 mm/month)
 - **Cycle:** 9 quincenas (135 days)
 - **Root depth:** 110 cm
 - **Sources:** Doorenbos & Kassam (1979); FAO 56 (Allen et al., 1998)
@@ -141,6 +147,7 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 - **Slope max:** 8°
 - **pH:** 5.5-8.0
 - **Water requirement:** 550 mm/cycle
+- **Drought tolerance:** 5 consecutive dry months (<100 mm/month)
 - **Cycle:** 8 quincenas (110 days)
 - **Root depth:** 110 cm
 - **Sources:** Doorenbos & Kassam (1979); FAO 56 (Allen et al., 1998)
@@ -152,6 +159,7 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 - **Slope max:** 8°
 - **pH:** 5.5-7.5
 - **Water requirement:** 475 mm/cycle
+- **Drought tolerance:** 3 consecutive dry months (<100 mm/month)
 - **Cycle:** 9 quincenas (125 days)
 - **Root depth:** 100 cm
 - **Sources:** Doorenbos & Kassam (1979); FAO 56 (Allen et al., 1998)
@@ -164,9 +172,41 @@ Universal physical limits based on FAO (1976) and USDA Soil Taxonomy:
 | Clay max | 50% | Above this, soil has poor drainage and root penetration (USDA: clay) |
 | SOC min | 0.5% | Below this, soil is degraded with poor fertility and structure |
 
+## Drought Tolerance (max_consecutive_dry_months)
+
+A "dry month" is defined here as a month with **less than 100 mm of
+precipitation** — the threshold below which tropical perennial crops
+(cocoa, coffee, plantain, sugarcane) stop growing normally and begin to
+accumulate water stress. The `max_consecutive_dry_months` value is the number
+of consecutive dry months a crop tolerates before **severe** damage (major
+yield loss or mortality risk).
+
+This field supports the final irrigation suggestion: if the model forecasts a
+dry spell longer than this limit, the crop is flagged as needing irrigation
+(no matter the average deficit), because a short but intense dry period is
+enough to force irrigation in drought-sensitive crops (e.g. plantain, with a
+2-month limit).
+
+| Crop | Max consecutive dry months | Drought sensitivity |
+|---|---|---|
+| sugarcane | 3 | Moderate (high water use, growth stops when dry) |
+| cacao_ccn51 | 3 | Sensitive |
+| arabica_coffee | 3 | Sensitive |
+| plantain | 2 | Most sensitive (shallow roots) |
+| wheat | 3 | Moderate (critical at flowering/grain fill) |
+| sorghum | 5 | Most tolerant (C4, deep roots) |
+| canola | 3 | Moderate (critical at flowering/pod fill) |
+
+Note: annual crops (wheat, sorghum, canola) are evaluated differently in
+practice — they are sown in a specific season and rely on stored soil
+moisture, so "consecutive dry months" is a coarse guide. Their drought
+behaviour is better quantified by the FAO 33 yield-response factor (Ky), which
+may be added in a future revision.
+
 ## References
 
 - Allen, R.G., Pereira, L.S., Raes, D., & Smith, M. (1998). Crop evapotranspiration: Guidelines for computing crop water requirements. FAO Irrigation and Drainage Paper 56. Rome.
+- Carr, M.K.V. (2001). The water relations and irrigation requirements of coffee. Experimental Agriculture, 37(1), 1-36.
 - Carr, M.K.V., & Lockwood, R. (2011). The water relations and irrigation requirements of cocoa (Theobroma cacao L.): A review. Experimental Agriculture, 47(4), 653-676.
 - Cenicafé (2016). Guía para el cultivo de café en Colombia. Centro Nacional de Investigaciones de Café.
 - DaMatta, F.M., & Ramalho, J.D.C. (2006). Impacts of drought and temperature stress on coffee physiology and production: A review. Brazilian Journal of Plant Physiology, 18(1), 55-81.

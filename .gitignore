@@ -9,3 +9,9 @@ databases/*-v*.csv
 ml/ml_dataset_*_shard*.csv
 ml/checkpoint_*.json
 ml/log_shard*.txt
+
+# ONI cache (regenerated on demand from NOAA)
+databases/oni_monthly.csv
+
+# Dataset backups (moved to test/ for safety, not versioned)
+*.BACKUP-v*.csv
