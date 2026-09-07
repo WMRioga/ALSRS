@@ -19,7 +19,7 @@ The hierarchy (criteria and sub-criteria) and their weights are read from
                     ramping to 0 at 100%.
     - pH          : 1 inside [ph_min, ph_max]; 0.5 within +/- 1.0; 0.2 beyond.
     - SOC         : min(1, soc / soc_min).
-    - Water (WRSI): proportion of labeled periods with ``deficit_pct <= 30``.
+    - Water (WRSI): proportion of labeled periods with ``deficit_1m <= 30``.
 
 Temperature exception (a biweekly period outside the tolerable range has
 ``temp_score == 0``):
@@ -449,7 +449,7 @@ def main(
         "textura": score_texture(sand_pct, clay_pct, params),
         "ph": score_ph(ph, params),
         "soc": score_soc(soc_pct, params),
-        "wrsi": score_water(wb_df["deficit_pct"]),
+        "wrsi": score_water(wb_df["deficit_1m"]),
     }
 
     # 6. Weighted aggregation + FAO class with limiting-factor rule.

@@ -37,7 +37,7 @@ Output columns (approved ML schema):
     point_id, lat, lon, crop, period_start, period_end, label, month, biweek,
     mean_C, std_C, precip_total_mm, precip_rainy_days, pet_mm,
     spei_1m, spei_3m, spei_6m, spei_12m, AWC_mm, Storage_mm, P_acum_mm,
-    WRSI, deficit_pct,  future_deficit_1m, future_deficit_3m,
+    WRSI_1m, deficit_1m,  future_deficit_1m, future_deficit_3m,
     future_deficit_6m,  future_deficit_1m_mm, future_deficit_3m_mm,
     future_deficit_6m_mm,  suggestion,  oni
 
@@ -137,7 +137,7 @@ def build_ml_rows(
     """
     Joins the four per-point CSVs and builds the approved ML rows.
 
-    Features come from: water_balance_labels (AWC, SPEI, storage, WRSI,
+    Features come from: water_balance_labels (AWC, SPEI, storage, WRSI_1m,
     deficit) + temperature (mean_C, std_C) + precipitation (total, rainy days)
     + SPEI (pet_mm). Seasonal position (month, biweek) is derived from label.
     Labels are the 3 nested future accumulated deficits
@@ -167,7 +167,7 @@ def build_ml_rows(
     feature_cols = [
         "mean_C", "std_C", "precip_total_mm", "precip_rainy_days", "pet_mm",
         "spei_1m", "spei_3m", "spei_6m", "spei_12m",
-        "AWC_mm", "Storage_mm", "P_acum_mm", "WRSI", "deficit_pct",
+        "AWC_mm", "Storage_mm", "P_acum_mm", "WRSI_1m", "deficit_1m",
     ]
     target_cols = [
         "future_deficit_1m", "future_deficit_3m", "future_deficit_6m",
@@ -175,12 +175,15 @@ def build_ml_rows(
     companion_cols = [
         "future_deficit_1m_mm", "future_deficit_3m_mm", "future_deficit_6m_mm",
     ]
+    # Past deficits are baseline references (NOT features, NOT targets).
+    baseline_cols = ["past_deficit_3m", "past_deficit_6m"]
     order = (
         ["point_id", "lat", "lon", "crop", "period_start", "period_end",
          "label", "month", "biweek"]
         + feature_cols
         + target_cols
         + companion_cols
+        + baseline_cols
         + ["suggestion"]
     )
     return df[order]

@@ -28,23 +28,25 @@ Method (FAO bucket model, biweekly):
           Storage(t) = clip(P(t) + Storage(t-1) - AET(t), 0, AWC)
       Warm-up: the first 4 biweekly periods only initialize the storage
       (mean of P-ETc, clipped to [0, AWC]) and are excluded from the labels.
-    - Rolling WRSI over the evaluation window W (24 for perennial, cycle
-      duration for annual):
+    - Rolling WRSI over a SHORT evaluation window (``WRSI_WINDOW_QUINCENAS``,
+      default 2 biweeks = 1 month), so it reflects current stress rather than
+      a flat 12-month average:
           WRSI(t) = sum(AET over window) / sum(ETc over window)
           deficit(t) = (1 - WRSI(t)) * 100
     - Forecast targets (nested accumulated future deficits): for each biweek
       t, the deficit accumulated over the NEXT 1, 3 and 6 months:
-          future_deficit_H(t) = sum(ETc - AET over [t+1 .. t+H]) /
+          future_deficit_H(t) = 100 * sum(ETc - AET over [t+1 .. t+H]) /
                                 sum(ETc over [t+1 .. t+H])
-      with H = 2 (1m), 6 (3m) and 12 (6m) biweeks. These are genuinely
-      forward-looking (no overlap with the features) and are the ML targets.
+      with H = 2 (1m), 6 (3m) and 12 (6m) biweeks (percentage 0-100). These are
+      genuinely forward-looking (no overlap with the features) and are the ML
+      targets.
     - Irrigation suggestion = the WORST class among the three horizons (each
       accumulated deficit classified):
-          <=0.15 -> LOW, <=0.30 -> MEDIUM, <=0.50 -> HIGH, >0.50 -> NOT_SUITABLE.
+          <=15 -> LOW, <=30 -> MEDIUM, <=50 -> HIGH, >50 -> NOT_SUITABLE.
 
 Output:
     databases/water_balance_labels_{crop}-vYYMMDDHHMMSS.csv with features
-    (AWC_mm, spei_1m/3m/6m/12m, P_acum_mm, Storage_mm, WRSI, deficit_pct),
+    (AWC_mm, spei_1m/3m/6m/12m, P_acum_mm, Storage_mm, WRSI_1m, deficit_1m),
     forecast targets (future_deficit_1m/3m/6m and their mm counterparts) and
     the derived suggestion.
 
@@ -88,13 +90,37 @@ SPEI_PREFIX = "spei_biweekly"
 # Biweekly periods used for the storage warm-up (2 months).
 WARMUP_PERIODS = 4
 
+# WRSI / deficit EVALUATION window (biweekly periods).
+# ---------------------------------------------------------------------------
+# The crop water requirement (``water_requirement_mm``) is an ANNUAL total,
+# so it is still distributed over 24 biweeks for perennials (see
+# ``compute_etc``). But the WRSI ratio itself is evaluated over a SHORT window
+# so that ``WRSI_1m``/``deficit_1m`` reflect the CURRENT water stress instead of
+# a flat 12-month average (which hides the dry/wet seasonality).
+#
+#   1  = 1 quincena (instantaneous stress)
+#   2  = 1 month    (recommended default)
+#   6  = 3 months
+#   12 = 6 months
+WRSI_WINDOW_QUINCENAS = 2
+
 # Nested forecast horizons: (output suffix, number of future biweeks).
 # 2 biweeks = 1 month, 6 = 3 months, 12 = 6 months. Each target is the deficit
-# accumulated over that future window (fraction 0-1).
+# accumulated over that future window (percentage 0-100).
 FORECAST_HORIZONS = [
     ("future_deficit_1m", 2),
     ("future_deficit_3m", 6),
     ("future_deficit_6m", 12),
+]
+
+# Past-deficit baselines (backward twin of the forecast targets). These are
+# NOT ML targets: they are the deficit accumulated over the SAME-sized window
+# immediately BEFORE t, used as an honest persistence baseline in evaluation.
+# (the 1-month past deficit is already provided by ``deficit_1m``, which is the
+# deficit; only 3m and 6m need explicit columns.)
+PAST_HORIZONS = [
+    ("past_deficit_3m", 6),
+    ("past_deficit_6m", 12),
 ]
 
 # Suggestion classes (English).
@@ -273,11 +299,12 @@ def compute_wrsi_series(
         awc_mm: Total available water capacity (mm).
 
     Returns:
-        tuple: (out_df, window, storage_init) where ``out_df`` is ``df`` plus
-        columns ``ETc_mm``, ``AET_mm``, ``Storage_mm``, ``P_acum_mm``, ``WRSI``
-        and ``deficit_pct``.
+        tuple: (out_df, wrsi_window, storage_init) where ``out_df`` is ``df``
+        plus columns ``ETc_mm``, ``AET_mm``, ``Storage_mm``, ``P_acum_mm``,
+        ``WRSI_1m`` and ``deficit_1m``.
     """
     window = 24 if crop_type == "perennial" else int(cycle_quincenas)
+    wrsi_window = WRSI_WINDOW_QUINCENAS
 
     precip = df["precip_total_mm"].to_numpy(dtype=float)
     pet = df["pet_mm"].to_numpy(dtype=float)
@@ -286,11 +313,12 @@ def compute_wrsi_series(
     etc = compute_etc(pet, water_requirement_mm, window)
     storage, aet, storage_init = compute_water_balance(precip, etc, awc_mm)
 
-    # Rolling WRSI and accumulated precipitation over the window.
+    # Rolling WRSI and accumulated precipitation over the SHORT evaluation
+    # window (so deficit reflects current stress, not a 12-month average).
     wrsi = np.full(n, np.nan, dtype=float)
     p_acum = np.full(n, np.nan, dtype=float)
-    for t in range(window - 1, n):
-        s = slice(t - window + 1, t + 1)
+    for t in range(wrsi_window - 1, n):
+        s = slice(t - wrsi_window + 1, t + 1)
         etc_sum = float(np.nansum(etc[s]))
         p_acum[t] = float(np.nansum(precip[s]))
         if etc_sum > 0:
@@ -303,30 +331,30 @@ def compute_wrsi_series(
     out["AET_mm"] = aet
     out["Storage_mm"] = storage
     out["P_acum_mm"] = p_acum
-    out["WRSI"] = wrsi
-    out["deficit_pct"] = deficit
-    return out, window, storage_init
+    out["WRSI_1m"] = wrsi
+    out["deficit_1m"] = deficit
+    return out, wrsi_window, storage_init
 
 
 # Severity ranking of the irrigation-need classes (worst = highest).
 _SUGGESTION_RANK = {LOW: 0, MEDIUM: 1, HIGH: 2, NOT_SUITABLE: 3}
 
 
-def classify_suggestion(deficit_fraction: float) -> str:
+def classify_suggestion(deficit_pct_value: float) -> str:
     """
-    Maps an accumulated water deficit (fraction 0-1) to an irrigation-need
-    class.
+    Maps an accumulated water deficit (percentage 0-100) to an
+    irrigation-need class.
 
-    <=0.15 -> LOW, <=0.30 -> MEDIUM, <=0.50 -> HIGH, >0.50 -> NOT_SUITABLE.
+    <=15 -> LOW, <=30 -> MEDIUM, <=50 -> HIGH, >50 -> NOT_SUITABLE.
     Returns an empty string when there is no future data (NaN).
     """
-    if pd.isna(deficit_fraction):
+    if pd.isna(deficit_pct_value):
         return ""
-    if deficit_fraction <= 0.15:
+    if deficit_pct_value <= 15.0:
         return LOW
-    if deficit_fraction <= 0.30:
+    if deficit_pct_value <= 30.0:
         return MEDIUM
-    if deficit_fraction <= 0.50:
+    if deficit_pct_value <= 50.0:
         return HIGH
     return NOT_SUITABLE
 
@@ -356,8 +384,8 @@ def _accumulate_future_deficit(
 
     For each period t, sums (ETc - AET) and ETc over [t+1 .. t+horizon]:
 
-        fraction(t) = sum(ETc - AET) / sum(ETc)
-        mm(t)       = sum(ETc - AET)
+        deficit_pct(t) = 100 * sum(ETc - AET) / sum(ETc)   (percentage 0-100)
+        mm(t)          = sum(ETc - AET)                     (mm)
 
     Rows without ``horizon`` future biweeks (or with any NaN in the window)
     stay NaN.
@@ -368,10 +396,10 @@ def _accumulate_future_deficit(
         horizon: Number of future biweeks to accumulate.
 
     Returns:
-        tuple: (fraction, mm) arrays, same length as ``etc``.
+        tuple: (deficit_pct, mm) arrays, same length as ``etc``.
     """
     n = len(etc)
-    fraction = np.full(n, np.nan, dtype=float)
+    deficit_pct = np.full(n, np.nan, dtype=float)
     mm = np.full(n, np.nan, dtype=float)
 
     for t in range(n):
@@ -385,9 +413,54 @@ def _accumulate_future_deficit(
         denom = float(np.sum(etc_win))
         numer = float(np.sum(etc_win - aet_win))
         if denom > 0:
-            fraction[t] = numer / denom
+            deficit_pct[t] = 100.0 * numer / denom
             mm[t] = numer
-    return fraction, mm
+    return deficit_pct, mm
+
+
+def _accumulate_past_deficit(
+    etc: np.ndarray, aet: np.ndarray, horizon: int
+) -> np.ndarray:
+    """
+    Accumulates the water deficit over the PREVIOUS ``horizon`` biweeks.
+
+    This is the backward twin of :func:`_accumulate_future_deficit`. For each
+    period t it sums (ETc - AET) and ETc over [t-horizon .. t-1]:
+
+        past_deficit_pct(t) = 100 * sum(ETc - AET) / sum(ETc)
+
+    It is used as an HONEST persistence baseline for the ML evaluation: the
+    forecast target ``future_deficit_H(t)`` (window [t+1 .. t+H]) is compared
+    against the deficit of the SAME-sized window immediately before it
+    ([t-H .. t-1]), so both have the same variance/dilution.
+
+    Rows without ``horizon`` past biweeks (or with any NaN in the window)
+    stay NaN.
+
+    Args:
+        etc: Crop evapotranspiration per period (mm).
+        aet: Actual evapotranspiration per period (mm).
+        horizon: Number of past biweeks to accumulate.
+
+    Returns:
+        numpy.ndarray: past deficit percentage (0-100), same length as ``etc``.
+    """
+    n = len(etc)
+    deficit_pct = np.full(n, np.nan, dtype=float)
+
+    for t in range(n):
+        start = t - horizon
+        if start < 0:
+            continue
+        etc_win = etc[start:t]
+        aet_win = aet[start:t]
+        if np.isnan(etc_win).any() or np.isnan(aet_win).any():
+            continue
+        denom = float(np.sum(etc_win))
+        numer = float(np.sum(etc_win - aet_win))
+        if denom > 0:
+            deficit_pct[t] = 100.0 * numer / denom
+    return deficit_pct
 
 
 def build_labeled_dataset(
@@ -395,7 +468,7 @@ def build_labeled_dataset(
 ) -> pd.DataFrame:
     """
     Builds the labeled frame: features at time t plus the nested future
-    targets (future_deficit_1m/3m/6m as a fraction 0-1, plus their mm
+    targets (future_deficit_1m/3m/6m as a percentage 0-100, plus their mm
     counterparts) and the irrigation suggestion = the WORST class among the
     three horizons. Keeps only rows whose features are complete AND that have
     a valid 6-month target (so the tail without enough future data is dropped).
@@ -413,9 +486,13 @@ def build_labeled_dataset(
 
     # Nested accumulated future deficits (the ML targets).
     for name, horizon in FORECAST_HORIZONS:
-        fraction, mm = _accumulate_future_deficit(etc, aet, horizon)
-        out[name] = fraction
+        deficit_pct, mm = _accumulate_future_deficit(etc, aet, horizon)
+        out[name] = deficit_pct
         out[f"{name}_mm"] = mm
+
+    # Past deficits (backward twin), kept for the honest persistence baseline.
+    for name, horizon in PAST_HORIZONS:
+        out[name] = _accumulate_past_deficit(etc, aet, horizon)
 
     # Irrigation suggestion = worst class among the three horizons, derived
     # from the accumulated deficits (not predicted).
@@ -438,7 +515,7 @@ def build_labeled_dataset(
     # exists (drops the tail with no future data).
     feature_cols = [
         "spei_1m", "spei_3m", "spei_6m", "spei_12m",
-        "P_acum_mm", "Storage_mm", "WRSI",
+        "P_acum_mm", "Storage_mm", "WRSI_1m",
     ]
     labeled = out.dropna(subset=feature_cols + ["future_deficit_6m"]).copy()
 
@@ -446,22 +523,28 @@ def build_labeled_dataset(
     output_cols = (
         ["crop", "period_start", "period_end", "label", "AWC_mm"]
         + ["spei_1m", "spei_3m", "spei_6m", "spei_12m"]
-        + ["P_acum_mm", "Storage_mm", "WRSI", "deficit_pct"]
+        + ["P_acum_mm", "Storage_mm", "WRSI_1m", "deficit_1m"]
     )
     for name, _ in FORECAST_HORIZONS:
         output_cols += [name, f"{name}_mm"]
+    for name, _ in PAST_HORIZONS:
+        output_cols += [name]
     output_cols += ["suggestion"]
     labeled = labeled[output_cols]
 
     # Round numeric columns for a clean CSV.
-    for col in ["P_acum_mm", "Storage_mm", "AWC_mm", "deficit_pct"]:
+    for col in ["P_acum_mm", "Storage_mm", "AWC_mm", "deficit_1m"]:
         labeled[col] = labeled[col].round(2)
     for col in ["spei_1m", "spei_3m", "spei_6m", "spei_12m"]:
         labeled[col] = labeled[col].round(3)
-    labeled["WRSI"] = labeled["WRSI"].round(4)
+    labeled["WRSI_1m"] = labeled["WRSI_1m"].round(4)
     for name, _ in FORECAST_HORIZONS:
+        # 4 decimals so the saved value reproduces the exact threshold class
+        # (2 decimals would round 15.004 -> 15.00 and shift edge cases).
         labeled[name] = labeled[name].round(4)
         labeled[f"{name}_mm"] = labeled[f"{name}_mm"].round(2)
+    for name, _ in PAST_HORIZONS:
+        labeled[name] = labeled[name].round(4)
 
     return labeled
 
@@ -529,9 +612,9 @@ def print_report(
     if len(labeled):
         print(f"Date range     : {labeled['label'].iloc[0]} -> "
               f"{labeled['label'].iloc[-1]}")
-        print(f"WRSI (current)  : min={labeled['WRSI'].min():.3f}, "
-              f"mean={labeled['WRSI'].mean():.3f}, "
-              f"max={labeled['WRSI'].max():.3f}")
+        print(f"WRSI (current)  : min={labeled['WRSI_1m'].min():.3f}, "
+              f"mean={labeled['WRSI_1m'].mean():.3f}, "
+              f"max={labeled['WRSI_1m'].max():.3f}")
     print("-" * 78)
     if len(labeled):
         print("Suggestion distribution:")

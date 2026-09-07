@@ -1,6 +1,6 @@
 # ALSRS ML Dataset Dictionary
 
-Reference documentation for `ml/ml_dataset_cacao_ccn51.csv` (30 columns). Each
+Reference documentation for `ml/ml_dataset_cacao_ccn51.csv` (31 columns). Each
 row is one biweekly period for one sampled point in the cacao belt, with
 features measured at that period and the water-deficit targets used to train
 the irrigation-need model.
@@ -58,21 +58,27 @@ crop parameters from `databases/crop_parameters_260822.csv`.
 | # | Column | Description | Uses crop? |
 |---|---|---|---|
 | 19 | `Storage_mm` | Soil water storage (mm) from the sequential FAO bucket model: `Storage(t) = clip(P(t) + Storage(t−1) − AET(t), 0, AWC)`. | Yes (`water_requirement_mm` via ETc) |
-| 20 | `P_acum_mm` | Precipitation accumulated over the rolling window (24 quincenas for perennials). | Yes (`type`/`cycle_quincenas` set the window) |
-| 21 | `WRSI` | Water Requirement Satisfaction Index = `ΣAET / ΣETc` over the rolling window. | Yes (`water_requirement_mm`, `type`) |
-| 22 | `deficit_pct` | Water deficit of the current period = `(1 − WRSI) × 100` (%). | Yes (via WRSI) |
+| 20 | `P_acum_mm` | Precipitation accumulated over the short evaluation window (`WRSI_WINDOW_QUINCENAS = 2` biweeks = 1 month). | Yes (`type`/`cycle_quincenas` set the window) |
+| 21 | `WRSI_1m` | Water Requirement Satisfaction Index = `ΣAET / ΣETc` over the **short** evaluation window (2 biweeks = 1 month), so it reflects *current* stress rather than a 12-month average. | Yes (`water_requirement_mm`, `type`) |
+| 22 | `deficit_1m` | Water deficit of the current period = `(1 − WRSI_1m) × 100` (%), over the short window (1 month). | Yes (via WRSI_1m) |
 
 ### 1.6 Forecast targets (model labels) and suggestion
 
 | # | Column | Description | Uses crop? |
 |---|---|---|---|
-| 23 | `future_deficit_1m` | **Target.** Accumulated water deficit over the next 2 biweeks (1 month), as a fraction 0–1: `Σ(ETc−AET)/ΣETc` over `[t+1 … t+2]`. | Yes |
-| 24 | `future_deficit_3m` | **Target.** Accumulated deficit over the next 6 biweeks (3 months), fraction 0–1. | Yes |
-| 25 | `future_deficit_6m` | **Target.** Accumulated deficit over the next 12 biweeks (6 months), fraction 0–1. | Yes |
+| 23 | `future_deficit_1m` | **Target.** Accumulated water deficit over the next 2 biweeks (1 month), as a **percentage 0–100**: `100·Σ(ETc−AET)/ΣETc` over `[t+1 … t+2]`. | Yes |
+| 24 | `future_deficit_3m` | **Target.** Accumulated deficit over the next 6 biweeks (3 months), percentage 0–100. | Yes |
+| 25 | `future_deficit_6m` | **Target.** Accumulated deficit over the next 12 biweeks (6 months), percentage 0–100. | Yes |
 | 26 | `future_deficit_1m_mm` | Companion of #23 in mm (numerator `Σ(ETc−AET)`). **Not a target.** | Yes |
 | 27 | `future_deficit_3m_mm` | Companion of #24 in mm. **Not a target.** | Yes |
 | 28 | `future_deficit_6m_mm` | Companion of #25 in mm. **Not a target.** | Yes |
-| 29 | `suggestion` | Irrigation-need class = the **worst (most severe) class among the three horizons** (`future_deficit_1m/3m/6m`), each classified with LOW (≤0.15), MEDIUM (≤0.30), HIGH (≤0.50), NOT_SUITABLE (>0.50). Severity order: LOW < MEDIUM < HIGH < NOT_SUITABLE. **Derived, not predicted.** | Yes |
+| 29 | `suggestion` | Irrigation-need class = the **worst (most severe) class among the three horizons** (`future_deficit_1m/3m/6m`), each classified with LOW (≤15%), MEDIUM (≤30%), HIGH (≤50%), NOT_SUITABLE (>50%). Severity order: LOW < MEDIUM < HIGH < NOT_SUITABLE. **Derived, not predicted.** | Yes |
+
+### 1.7 Climate index — acquired (global, joined by date)
+
+| # | Column | Description | Uses crop? |
+|---|---|---|---|
+| 30 | `oni` | Oceanic Niño Index (ENSO): 3-month running mean of Niño 3.4 SST anomaly (°C). Source: NOAA CPC, joined by year+month. Positive = El Niño (drier in both ALSRS regions), negative = La Niña (wetter). | No |
 
 ---
 
@@ -87,14 +93,27 @@ the pipeline, but are not exported as columns of `ml_dataset_cacao_ccn51.csv`.
 | `ETc_mm` | `ETc(t) = water_requirement_mm × ET0(t) / ΣET0(window)` | Crop evapotranspiration per period; distributes the total requirement so `ΣETc(window) = water_requirement_mm`. | Yes (`water_requirement_mm`) |
 | `AET_mm` | `AET(t) = min(P(t) + Storage(t−1), ETc(t))` | Actual evapotranspiration (water actually available). | Yes (via ETc) |
 | `Storage_mm` | `Storage(t) = clip(P(t) + Storage(t−1) − AET(t), 0, AWC)` | Soil moisture state; **stored** as a feature. | Yes (via ETc/AET) |
-| `WRSI` | `ΣAET(window) / ΣETc(window)` | Water satisfaction; **stored** as a feature. | Yes |
+| `WRSI_1m` | `ΣAET(window) / ΣETc(window)` | Water satisfaction; **stored** as a feature. | Yes |
 
 > **Note:** `ETc_mm` and `AET_mm` exist as intermediate columns inside
 > `water_balance.py` (`out["ETc_mm"]`, `out["AET_mm"]`). They are used to
 > compute the forecast targets (the accumulated deficits) and are dropped when
 > the labeled CSV is written (`build_labeled_dataset`). They are deliberately
 > excluded from the ML dataset because their information is already embedded in
-> `WRSI`, `Storage_mm`, `deficit_pct`, and the targets.
+> `WRSI_1m`, `Storage_mm`, `deficit_1m`, and the targets.
+
+### The three "ET" values (avoid confusion)
+
+| Symbol | Name | What it is | Measured from the plant? |
+|---|---|---|---|
+| `ET0` (`pet_mm`) | Reference evapotranspiration | The **potential** ET of an ideal surface with unlimited water (Thornthwaite, from temperature + latitude). | No |
+| `ETc` | Crop evapotranspiration | The crop's **water requirement** per period = `1500 · ET0 / ΣET0(24)`, so an annual sum gives 1500 mm. | No (modeled) |
+| `AET` | Actual evapotranspiration | What the crop **actually consumes** = `min(P + Storage(t−1), ETc)`. | No (modeled) |
+
+None of the three is measured from the plant — all are modeled from satellite
+climate inputs. The whole water balance is a **hypothetical cacao simulation**:
+it answers "if cacao were planted here, would it get enough water?". The deficit
+is exactly the gap `ETc − AET`.
 
 ---
 
@@ -123,31 +142,36 @@ temperature (ERA5-Land). The steps:
 
    The first 4 periods only warm up the storage and are excluded.
 
-3. **Rolling WRSI** over the evaluation window `W` (24 quincenas for
-   perennials, cycle length for annuals):
+3. **Rolling WRSI** over a **short** evaluation window
+   (`WRSI_WINDOW_QUINCENAS = 2` biweeks = 1 month):
 
    ```
-   WRSI(t)    = Σ AET(window) / Σ ETc(window)
+   WRSI(t)    = Σ AET(short window) / Σ ETc(short window)
    deficit(t) = (1 − WRSI(t)) × 100
    ```
 
+   The short window makes `deficit_1m` reflect the **current** water stress
+   and reveals the dry/wet seasonality (e.g. Feb ≈ 83% deficit, Jun ≈ 0% in
+   the dry belt). A 12-month window would average this out to a flat ~9%.
+
 ### 3.2 The forecast targets are genuinely forward-looking
 
-The ML targets (`future_deficit_1m/3m/6m`) are **accumulated future deficits**,
-computed over the *next* H biweeks:
+The ML targets (`future_deficit_1m/3m/6m`) are **accumulated future deficits**
+(percentage 0–100), computed over the *next* H biweeks:
 
 ```
-future_deficit_H(t) = Σ[ETc(t+j) − AET(t+j)] / Σ ETc(t+j)   , j = 1 … H
+future_deficit_H(t) = 100 · Σ[ETc(t+j) − AET(t+j)] / Σ ETc(t+j)   , j = 1 … H
 ```
 
 with H = 2 (1 month), 6 (3 months), 12 (6 months). They use **only future
 data** (`t+1 … t+H`), so they do not overlap the features (which go up to time
 `t`). This is why they avoid the redundancy problem of the previous design.
+The `_mm` companions hold the numerator (`Σ[ETc−AET]`) in mm.
 
 ### 3.3 Why accumulated (not per-biweek) targets
 
 The previous design used 12 per-biweek point targets (`deficit_t1…t12`), which
-were `deficit_pct` shifted forward. Because `WRSI` is a **12-month rolling
+were `deficit_1m` shifted forward. Because `WRSI_1m` is a **12-month rolling
 window**, those labels shared most of their window with the present, so a
 model predicted them trivially (redundancy) without learning the future.
 
@@ -175,10 +199,13 @@ short term, medium term, and the full semester.
 |---|---|---|
 | Pure climate | `mean_C`, `std_C`, `precip_total_mm`, `precip_rainy_days`, `pet_mm`, `spei_1m/3m/6m/12m` | No (identical for any crop) |
 | Pure soil | `AWC_mm` | No (soil only) |
-| Crop-driven | `Storage_mm`, `P_acum_mm` (window only), `WRSI`, `deficit_pct`, `future_deficit_*`, `suggestion` | Yes |
+| Crop-driven | `Storage_mm`, `P_acum_mm` (window only), `WRSI_1m`, `deficit_1m`, `future_deficit_*`, `suggestion` | Yes |
 
 The engine of the crop dependency is a single parameter,
-`water_requirement_mm = 1500` (plus `type = perennial` → 24-quincena window).
+`water_requirement_mm = 1500` (plus `type = perennial`). Note two distinct
+windows: the **ETc distribution** still uses 24 quincenas (annual, because the
+requirement is annual), while the **WRSI/deficit evaluation** uses a short
+window of 2 quincenas (1 month) to capture current stress.
 Only 2 of the 18 columns of `crop_parameters_260822.csv` feed the water
 balance/WRSI; the other 16 feed the viability filter (`crop_viability.py`).
 
