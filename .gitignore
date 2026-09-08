@@ -15,3 +15,13 @@ databases/oni_monthly.csv
 
 # Dataset backups (moved to test/ for safety, not versioned)
 *.BACKUP-v*.csv
+
+# Trained model binaries (large, regenerable from the notebooks)
+*.joblib
+
+# Model output directories (regenerable from the notebooks)
+ml/models/
+ml/hurdle_models/
+
+# Evaluation result CSVs (regenerable from evaluate_model.py)
+ml/eval_*.csv
