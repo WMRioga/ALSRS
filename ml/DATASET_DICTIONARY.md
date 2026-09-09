@@ -1,6 +1,6 @@
 # ALSRS ML Dataset Dictionary
 
-Reference documentation for `ml/ml_dataset_cacao_ccn51.csv` (31 columns). Each
+Reference documentation for `ml/ml_dataset_cacao_ccn51.csv` (33 columns). Each
 row is one biweekly period for one sampled point in the cacao belt, with
 features measured at that period and the water-deficit targets used to train
 the irrigation-need model.
@@ -62,7 +62,7 @@ crop parameters from `databases/crop_parameters_260822.csv`.
 | 21 | `WRSI_1m` | Water Requirement Satisfaction Index = `ΣAET / ΣETc` over the **short** evaluation window (2 biweeks = 1 month), so it reflects *current* stress rather than a 12-month average. | Yes (`water_requirement_mm`, `type`) |
 | 22 | `deficit_1m` | Water deficit of the current period = `(1 − WRSI_1m) × 100` (%), over the short window (1 month). | Yes (via WRSI_1m) |
 
-### 1.6 Forecast targets (model labels) and suggestion
+### 1.6 Forecast targets, baseline references and suggestion
 
 | # | Column | Description | Uses crop? |
 |---|---|---|---|
@@ -72,13 +72,15 @@ crop parameters from `databases/crop_parameters_260822.csv`.
 | 26 | `future_deficit_1m_mm` | Companion of #23 in mm (numerator `Σ(ETc−AET)`). **Not a target.** | Yes |
 | 27 | `future_deficit_3m_mm` | Companion of #24 in mm. **Not a target.** | Yes |
 | 28 | `future_deficit_6m_mm` | Companion of #25 in mm. **Not a target.** | Yes |
-| 29 | `suggestion` | Irrigation-need class = the **worst (most severe) class among the three horizons** (`future_deficit_1m/3m/6m`), each classified with LOW (≤15%), MEDIUM (≤30%), HIGH (≤50%), NOT_SUITABLE (>50%). Severity order: LOW < MEDIUM < HIGH < NOT_SUITABLE. **Derived, not predicted.** | Yes |
+| 29 | `past_deficit_3m` | **Baseline reference (not a feature, not a target).** Same-window backward deficit over the previous 3 months (`[t−6 … t−1]`), used only as the honest persistence baseline for the 3-month horizon. | Yes |
+| 30 | `past_deficit_6m` | **Baseline reference.** Same-window backward deficit over the previous 6 months (`[t−12 … t−1]`), persistence baseline for the 6-month horizon. | Yes |
+| 31 | `suggestion` | Irrigation-need class = the **worst (most severe) class among the three horizons** (`future_deficit_1m/3m/6m`), each classified with LOW (≤15%), MEDIUM (≤30%), HIGH (≤50%), NOT_SUITABLE (>50%). Severity order: LOW < MEDIUM < HIGH < NOT_SUITABLE. **Derived, not predicted.** (The final model re-bins into 3 classes LOW / MODERATE / SEVERE at prediction time.) | Yes |
 
 ### 1.7 Climate index — acquired (global, joined by date)
 
 | # | Column | Description | Uses crop? |
 |---|---|---|---|
-| 30 | `oni` | Oceanic Niño Index (ENSO): 3-month running mean of Niño 3.4 SST anomaly (°C). Source: NOAA CPC, joined by year+month. Positive = El Niño (drier in both ALSRS regions), negative = La Niña (wetter). | No |
+| 32 | `oni` | Oceanic Niño Index (ENSO): 3-month running mean of Niño 3.4 SST anomaly (°C). Source: NOAA CPC, joined by year+month. Positive = El Niño (drier in both ALSRS regions), negative = La Niña (wetter). | No |
 
 ---
 
