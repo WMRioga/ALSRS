@@ -7,6 +7,7 @@ databases/*-v*.csv
 
 # ML collection transient artifacts (redundant with the merged dataset)
 ml/ml_dataset_*_shard*.csv
+ml/ml_dataset_*_base.csv
 ml/checkpoint_*.json
 ml/log_shard*.txt
 

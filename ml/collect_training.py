@@ -355,9 +355,10 @@ if __name__ == "__main__":
 #
 #    To keep them running after you log out and capture the logs:
 #
-#        nohup python ml/collect_training.py --shard 0 --nshards 4 \
-#            > ml/log_shard0.txt 2>&1 &
-#        ... same for shards 1, 2, 3 ...
+# nohup python ml/collect_training.py --shard 0 --nshards 4 > ml/log_shard0.txt 2>&1 &
+# nohup python ml/collect_training.py --shard 1 --nshards 4 > ml/log_shard1.txt 2>&1 &
+# nohup python ml/collect_training.py --shard 2 --nshards 4 > ml/log_shard2.txt 2>&1 &
+# nohup python ml/collect_training.py --shard 3 --nshards 4 > ml/log_shard3.txt 2>&1 &
 #
 # 2. Watch progress. Each point prints a start timestamp and a finish
 #    timestamp, e.g.:
