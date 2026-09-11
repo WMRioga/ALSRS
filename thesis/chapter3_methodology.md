@@ -323,6 +323,13 @@ otherwise the prediction is zero. This keeps the large MAE gain that comes from
 correctly nailing the many zero rows, while **recovering the recall of the
 severe classes** that the naive `P · magnitude` combination loses.
 
+Two clarifications avoid a common confusion about the gate. First, at
+*inference* the regressor computes a magnitude for **every** row — it is only
+*trained* on the positive rows; the gate is what discards that magnitude when
+the classifier is not confident. Second, the gate is a **fixed rule, never
+fitted**: the zeros it produces are model *outputs*, not training data, and they
+enter no further learning.
+
 **Why a gate is justified.** The choice of a decision rule over an expectation
 reflects an *asymmetric loss*: in irrigation, failing to flag a genuine severe
 deficit (a false negative) is costlier than raising a false alarm. This is the

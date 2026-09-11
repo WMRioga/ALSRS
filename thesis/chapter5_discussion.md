@@ -41,7 +41,7 @@ target demands, and a single regressor cannot supply it.
 
 **RQ3 — How does the class scheme affect recall, and is the approach
 transferable?** The class scheme has a monotonic, predictable effect on accuracy
-(0.688 → 0.784 → 0.855–0.860; Table 4.6), and the adopted three-class scheme
+(0.688 → 0.784 → 0.855–0.860; Table 4.7), and the adopted three-class scheme
 yields a balanced recall profile (MODERATE 0.83, SEVERE 0.67). Transferability
 is established at the design level — the crop is a parameter of the pipeline
 rather than a property of the model — and is the subject of the pending
@@ -68,7 +68,7 @@ First, it reframes the contribution honestly: the hurdle's value is the
 elimination of false alarms on the many zero periods, not a breakthrough in
 predicting rare extremes. Second, it identifies the residual weakness — the
 model under-predicts the severe tail (32% of SEVERE cases fall to MODERATE,
-Table 4.7) — and points to the direct classifier as the complementary remedy
+Table 4.8) — and points to the direct classifier as the complementary remedy
 (Section 5.6).
 
 This mechanism is consistent with, but not identical to, the imbalanced-learning
@@ -99,9 +99,28 @@ for regression [31]. Had the study reported only MAE, it would have overstated
 the model by hiding the 0.67 SEVERE recall and the 32% under-flagging of severe
 cases.
 
+The choice of the 0.5 threshold was validated empirically by sweeping the gate
+probability from 0.2 to 1.0 (Table 4.6). The sweep reveals a U-shaped MAE: it
+reaches its minimum around 0.5–0.6 and rises steeply at high thresholds, because
+an over-conservative gate rejects genuine deficits and sends them to zero. The
+recall of the severe class, meanwhile, holds at the baseline level up to about
+0.6–0.7 and only then collapses. The threshold 0.5 therefore sits in a **flat
+zone** (0.4–0.6) where the result is almost insensitive to the exact value,
+which makes the choice robust rather than finely tuned.
+
+One technical caveat should be recorded. Because the stage-1 classifier uses
+`class_weight = "balanced"`, its output is a decision score rather than a
+well-calibrated probability: `P = 0.5` does not literally mean an even chance of
+deficit. The threshold is therefore justified on **empirical** grounds — the
+sweep shows it is the point of the trade-off curve where severe recall is still
+at baseline and MAE is near its minimum — not on a theoretical reading of 0.5 as
+an equiprobable split. Had a calibrated probability been required, a post-hoc
+calibration (e.g. Platt or isotonic) could be applied, but it was not necessary
+for the decision at hand.
+
 ## 5.5 Flexible Classification and the Boundary Principle
 
-Table 4.6 exhibits a clean, monotonic regularity: every class boundary removed
+Table 4.7 exhibits a clean, monotonic regularity: every class boundary removed
 is a source of error removed. Merging MEDIUM and HIGH into MODERATE (four → three
 classes) raises accuracy from 0.688 to 0.784, and further merging (three → two)
 raises it to 0.855–0.860. The underlying reason is visible in the four-class
@@ -122,7 +141,7 @@ fitted function.
 
 ## 5.6 Complementary Models: Hurdle versus Direct Classifier
 
-The comparison in Table 4.8 reveals two models that fail in opposite directions.
+The comparison in Table 4.9 reveals two models that fail in opposite directions.
 The hurdle is balanced but under-predicts the severe tail; the direct
 four-class classifier is a specialist at the extremes (LOW 0.98, SEVERE 0.83)
 but collapses the middle (MODERATE 0.44). This is not a contradiction but a

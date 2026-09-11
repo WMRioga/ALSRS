@@ -128,13 +128,39 @@ improvement of Table 4.4. In other words, the gate is what allows the hurdle to
 gain on *average* error without sacrificing the detection of the *severe* cases
 that the system exists to flag.
 
+**Table 4.6 — Gate probability-threshold sweep (1-month horizon).** The recall
+columns use the 4-class scheme, in which the sweep was computed; NOT_SUITABLE
+corresponds to SEVERE in the adopted 3-class scheme.
+
+| Threshold | recall MEDIUM | recall HIGH | recall NOT_SUITABLE | MAE 1m |
+|---|---|---|---|---|
+| 0.2 | 0.671 | 0.464 | 0.674 | 5.89 |
+| 0.3 | 0.657 | 0.464 | 0.674 | 5.13 |
+| 0.4 | 0.649 | 0.460 | 0.674 | 4.63 |
+| 0.5 | 0.610 | 0.456 | 0.674 | 4.33 |
+| 0.6 | 0.547 | 0.444 | 0.673 | 4.16 |
+| 0.7 | 0.453 | 0.399 | 0.670 | 4.40 |
+| 0.8 | 0.296 | 0.314 | 0.648 | 5.15 |
+| 0.9 | 0.143 | 0.176 | 0.563 | 7.15 |
+| 1.0 | 0.002 | 0.002 | 0.012 | 14.08 |
+
+*(Figure 4.x: recall and MAE versus the gate threshold, showing the U-shaped MAE
+and the collapse of severe recall above ~0.7.)*
+
+The sweep justifies the 0.5 threshold. The MAE is U-shaped, reaching its minimum
+around 0.5–0.6 and rising sharply at high thresholds, where an over-conservative
+gate rejects genuine deficits and sends them to zero. The severe-class recall
+(NOT_SUITABLE) remains at the baseline level (0.674) from 0.2 to 0.7 and only
+then collapses. The choice of 0.5 therefore lies in a flat, robust region where
+the result is almost insensitive to the exact threshold.
+
 ## 4.6 Flexible Severity Classification (RQ3)
 
 Because the model is a regressor, the severity class is a post-hoc, configurable
-step. Table 4.6 reports overall accuracy under four class schemes, using the
+step. Table 4.7 reports overall accuracy under four class schemes, using the
 *same* continuous predictions (no retraining).
 
-**Table 4.6 — Accuracy of the same continuous predictions under different class
+**Table 4.7 — Accuracy of the same continuous predictions under different class
 schemes.**
 
 | Scheme | Thresholds | Classes | Accuracy |
@@ -150,7 +176,7 @@ the errors that crossed it. The three-class scheme is adopted because it
 captures the accuracy gain of merging the fragile MEDIUM/HIGH boundary while
 retaining the operationally important distinction of an urgent SEVERE class.
 
-**Table 4.7 — Row-normalised confusion matrix, hurdle (gated), 3 classes
+**Table 4.8 — Row-normalised confusion matrix, hurdle (gated), 3 classes
 (diagonal = recall).**
 
 | True \ Predicted | LOW | MODERATE | SEVERE |
@@ -159,7 +185,7 @@ retaining the operationally important distinction of an urgent SEVERE class.
 | MODERATE | 0.13 | 0.83 | 0.04 |
 | SEVERE | 0.01 | 0.32 | 0.67 |
 
-*(Figure 4.2: heatmap of Table 4.7.)* The three-class scheme yields recall of
+*(Figure 4.2: heatmap of Table 4.8.)* The three-class scheme yields recall of
 0.79 (LOW), 0.83 (MODERATE) and 0.67 (SEVERE). The residual error is
 concentrated in the direction MODERATE→LOW (13%) and SEVERE→MODERATE (32%) — the
 model tends to *under-predict* the severity rather than over-predict it.
@@ -167,10 +193,10 @@ model tends to *under-predict* the severity rather than over-predict it.
 **Comparison with a direct classifier.** As a point of comparison, a single
 four-class `RandomForestClassifier` (a "direct" classifier that optimises the
 class labels directly rather than regressing and binning) was trained on the
-same features. Table 4.8 reports its three-class recall after merging
+same features. Table 4.9 reports its three-class recall after merging
 MEDIUM+HIGH, alongside the hurdle.
 
-**Table 4.8 — Three-class recall: hurdle (gated) vs direct classifier (merged).**
+**Table 4.9 — Three-class recall: hurdle (gated) vs direct classifier (merged).**
 
 | Class | Hurdle (gated) | Direct (merged) |
 |---|---|---|
@@ -185,12 +211,12 @@ severe tail. This complementarity is returned to in Chapter 5.
 
 ## 4.7 Baselines and Cross-Validation
 
-Table 4.9 situates the hurdle against the honest baselines introduced in
+Table 4.10 situates the hurdle against the honest baselines introduced in
 Chapter 3: a persistence reference ("tomorrow ≈ today", using the same-window
 backward deficit) and the single-regressor baseline, all under five-fold
 by-farm cross-validation.
 
-**Table 4.9 — Five-fold CV: persistence, single regressor and hurdle.**
+**Table 4.10 — Five-fold CV: persistence, single regressor and hurdle.**
 
 | Horizon | Persistence MAE (RMSE) | Single RF MAE (RMSE) | Hurdle MAE (RMSE) |
 |---|---|---|---|
