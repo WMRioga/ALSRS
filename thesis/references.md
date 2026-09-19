@@ -61,7 +61,7 @@
 
 [29] H. Wang, L. Zhao, K. Ding, F. Liu, R. Zhang, L. Chen, J. Qin, P. Cao, and S. Wang, "A two-stage machine learning framework for high-resolution multi-source precipitation fusion in complex terrain: A case study of Shaoxing, China," *Atmosphere*, vol. 17, no. 8, p. 762, 2026. doi: 10.3390/atmos17080762.
 
-[30] P. Branco, L. Torgo, and R. P. Ribeiro, "A survey of predictive modeling on imbalanced domains," *ACM Computing Surveys*, vol. 49, no. 2, pp. 1–50, 2017.
+[30] P. Branco, L. Torgo, and R. P. Ribeiro, "A survey of predictive modeling on imbalanced domains," *ACM Computing Surveys*, vol. 49, no. 2, pp. 1–50, 2016.
 
 [31] L. Torgo and R. P. Ribeiro, "Precision and recall for regression," in *Discovery Science* (LNCS 5808), pp. 332–346, 2009.
 
@@ -69,7 +69,9 @@
 
 [33] N. G. Inman-Bamber and D. M. Smith, "Water relations in sugarcane and response to water deficits," *Field Crops Research*, vol. 92, no. 2–3, pp. 185–202, 2005.
 
-[34] M. K. V. Carr, "The water relations and irrigation requirements of coffee," *Experimental Agriculture*, vol. 37, no. 1, pp. 1–36, 2001.
+[34] M. Farooq, M. Hussain, and K. H. M. Siddique, "Drought Stress in Wheat during Flowering and Grain-filling Periods" Critical Reviews in *Plant Sciences*,vol. 33, no. 4, pp. 331–349, 2014. DOI: 10.1080/07352689.2014.875291
 
-[35] F. M. DaMatta and J. D. C. Ramalho, "Impacts of drought and temperature stress on coffee physiology and production: A review," *Brazilian Journal of Plant Physiology*, vol. 18, no. 1, pp. 55–81, 2006.
+[35] M. K. V. Carr, "The water relations and irrigation requirements of coffee," *Experimental Agriculture*, vol. 37, no. 1, pp. 1–36, 2001.
+
+[36] F. M. DaMatta and J. D. C. Ramalho, "Impacts of drought and temperature stress on coffee physiology and production: A review," *Brazilian Journal of Plant Physiology*, vol. 18, no. 1, pp. 55–81, 2006.
 

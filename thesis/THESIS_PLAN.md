@@ -73,8 +73,9 @@ flowchart LR
 
 **El aporte (3 patas):**
 1. **Metodológico** — aplicar el hurdle a un contexto nuevo y demostrar *por qué*
-   funciona (elimina el "déficit fantasma" → MAE −34% a −64%).
-2. **Empírico** — evidencia real en cacao colombiano (239 fincas, 52k registros).
+   funciona (elimina el "déficit fantasma" → MAE −31% a −63% en el test).
+2. **Empírico** — evidencia real en cacao colombiano (239 fincas, 52k registros)
+   y caña de azúcar (340 fincas, 75k registros), en Colombia y Australia.
 3. **Práctico** — sistema transferible (crop es un parámetro) con clasificación
    ajustable al negocio sin re-entrenar.
 
@@ -103,19 +104,21 @@ flowchart LR
 
 ---
 
-## 6. ⚠️ Punto honesto: transferibilidad (afecta RQ3)
+## 6. ✅ Transferibilidad: resuelta (RQ3)
 
-La transferibilidad hoy es **arquitectónica** (el crop es un parámetro), pero
-**no está demostrada empíricamente** (solo se validó cacao).
+Se tomó la opción **(A)** y se demostró. Se corrió `sugarcane` (340 fincas,
+Colombia + Australia) con el mismo pipeline y hurdle, cambiando solo el umbral
+del gate (0.5 → 0.75). Resultado: el modelo transfiere entre perennes, con
+reducción de MAE en test de 63.9% / 39.2% / 15.5% (1/3/6 meses) y recall SEVERE
+de 0.92 (vs 0.65 de cacao).
 
-- **(A) Demostrarla** — correr `sugarcane` (cambiar `CROP` y el CSV de puntos,
-  re-entrenar) y mostrar que el mismo pipeline + hurdle funciona. **Fortalece
-  RQ3 y el aporte.**
-- **(B) Acotarla** — presentar la transferibilidad como propiedad de diseño +
-  trabajo futuro (Ch6), y dejar RQ3 como "clasificación flexible".
+El hallazgo clave es el **gradiente de zero-inflación**: cacao 72.8% → caña 35.0%
+→ trigo 10.1% (a 1 mes), y la reducción del hurdle cae con ella (63.1% → 15.5% a
+6 meses). Esto confirma el mecanismo: el hurdle ayuda proporcionalmente a cuánto
+"déficit fantasma" hay que eliminar.
 
-**Recomendación: hacer (A)** — es barato y convierte "prometo que funciona" en
-"demuestro que funciona".
+**Trigo (anual):** no transfirió (casi sin ceros, clase LOW vacía). Quedó
+documentado como **limitación** (Cap. 5), no como resultado.
 
 ---
 
@@ -128,3 +131,36 @@ La transferibilidad hoy es **arquitectónica** (el crop es un parámetro), pero
 5. Ch4 (Resultados) — exportar tablas/figuras de los notebooks `01`/`02`/`04`.
 6. Ch5 (Discusión) — convertir los hallazgos en argumento.
 7. Ch1 (Intro) al final + Ch6.
+
+---
+
+## 8. Apéndices (orden lógico, no por aparición)
+
+Los apéndices siguen el orden del pipeline (datos → modelo → análisis → código →
+configuración), para que el lector los recorra de forma natural.
+
+| Apéndice | Contenido | Archivos |
+|---|---|---|
+| **A — Diccionario de datos** | features (17), targets (3), WRSI, estacionalidad, split | `ml/DATASET_DICTIONARY.md` |
+| **B — Documentación del modelo** | hurdle (2 etapas), gate, 3 clases, weighting, evaluación | `ml/ML_MODEL.md` |
+| **C — Notebooks de análisis y experimentos** | zero-inflated + correlación ONI, hurdle/gate/sweep, clases, modelo final 70/10/20 | `test/MDS650_260903_dataset.ipynb`, `ml/01`–`ml/05`, `test/ml/evaluate_model.py` |
+| **D — Código fuente del pipeline** | balance hídrico, viabilidad, AHP, colección de datos | `analysis/*.py`, `extraction/*.py`, `ml/collect_training.py` |
+| **E — Datos de configuración** | parámetros de cultivo, pesos AHP, puntos | `databases/crop_parameters_260822.csv`, `databases/ahp_weights.csv`, `ml/points/{cacao,sugarcane,wheat}_points.csv` |
+
+### Mapa de respaldo (qué sección de la tesis referencia qué apéndice)
+
+| Sección | Afirmación / decisión | Apéndice |
+|---|---|---|
+| Ch3 §3.4 | Ventana WRSI de 1 mes (12 meses aplana a ~9%) | A |
+| Ch3 §3.6 | 17 features / 3 targets | A |
+| Ch3 §3.7 | Hurdle + gate + 3 clases | B (+ C) |
+| Ch3 §3.2 / §3.5 | 7 cultivos + screening AHP | E (+ D) |
+| Ch3 §3.3 | Fuentes de datos GEE (CHIRPS, ERA5, MODIS, SoilGrids…) | D |
+| Ch4 §4.2 | Zero-inflation 72.8/56.4/39.2% | C |
+| Ch4 §4.3 | Baseline + phantom deficit ~11.8 | C |
+| Ch4 §4.4 | Test MAE 4.37/5.15/7.29 (−63.1/−54.7/−31.3%) | C |
+| Ch4 §4.5 | Gate sweep (validation) | C |
+| Ch4 §4.6 | Accuracy 0.688→0.784→0.855 + confusión + directo | C |
+| Ch4 §4.7 | Persistence baseline | C |
+| Ch4 §4.8 | Learning curve | C |
+| Ch4 §4.8 | Correlación ONI 0.15/0.19/0.21 | C |
