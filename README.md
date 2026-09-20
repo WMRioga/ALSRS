@@ -38,24 +38,24 @@ The full crop documentation is in
   precipitation, evapotranspiration, SPEI, soil, terrain, ONI).
 - **`common/`** — shared helpers (periods, soil hydraulics, tiles).
 - **`mapping/`** — map generation scripts.
-- **`databases/`** — small parameter / weight tables:
-  - `crop_parameters_260822.csv` — crop parameters.
+- **`databases/`** — configuration and per-crop data:
+  - `crop_parameters_260822.csv` — crop parameters (7 crops).
   - `ahp_weights.csv` — AHP criteria weights.
-  - `oni_monthly.csv` — ONI/ENSO cache (regenerated on demand from NOAA).
+  - `cacao_ccn51/`, `wheat/`, `sugarcane/` — per-point extraction and viability outputs.
 - **`ml/`** — the machine-learning phase (see `ml/ML_MODEL.md` and
   `ml/DATASET_DICTIONARY.md`):
   - `collect_training.py` — builds the labeled training dataset.
-  - `01_evaluate_hurdle.ipynb` — two-stage (hurdle) model experiment.
-  - `02_evaluate_class_bins.ipynb` — flexible classification (4 → 3 → 2 classes).
-  - `03_final_hurdle_model.ipynb` — final model (train + save + predict).
-  - `04_alsrs_model_process.ipynb` — full walkthrough from dataset to final model.
-  - `ml_dataset_cacao_ccn51.csv` — the training dataset (cacao CCN-51).
-  - `cacao_points.csv` — the sampled points.
-- **`test/`** — exploratory notebooks and test scripts:
-  - `MDS650_*.ipynb` — data-analysis / exploration notebooks.
-  - `point_map.py`, `test_*.py` — helper / unit-test scripts.
-  - `ml/` — archived (superseded) single-RF notebooks.
-- **`img/maps/`** — generated map images (PNG).
+  - `01_evaluate_hurdle.ipynb` to `06_reproduce_ch4_tables.ipynb` — experiments,
+    train/validation/test results and authoritative table reproduction.
+  - `evaluate_model.ipynb` — grid search and weight comparison.
+  - `ml_dataset_{cacao_ccn51,sugarcane,wheat}.csv` — the labelled training datasets.
+  - `points/` — sampled point coordinates and per-shard collection artifacts.
+- **`img/`** — generated figures (confusion matrices, feature importance,
+  learning curves) and `img/maps/` map images.
+- **`test/`** — exploratory notebooks, unit tests and archived experiments.
+- **`thesis/`** — the thesis manuscript (`md/` Markdown chapters, `tex/` LaTeX
+  versions, `THESIS_PLAN.md`).
+- **`presentation/`** — slide decks.
 - **`scripts/`** — auxiliary scripts.
 
 ## Environment
