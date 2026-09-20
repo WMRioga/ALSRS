@@ -26,3 +26,7 @@ ml/hurdle_models/
 
 # Evaluation result CSVs (regenerable from evaluate_model.py)
 ml/eval_*.csv
+
+# Thesis working subfolders (kept locally, not versioned)
+thesis/md/
+thesis/tex/
