@@ -1,0 +1,2 @@
+crop,common_name,type,elevation_status,elevation_detail,elevation_m,slope_status,slope_detail,slope_deg,slope_std_deg,texture_status,texture_detail,sand_0_60_pct,clay_0_60_pct,ph_status,ph_detail,ph_0_60,soc_status,soc_detail,soc_0_60_pct
+wheat,Wheat,annual,VIABLE,"elevation within range [0, 1000] m",331.27,VIABLE,slope within limit,1.38,0.88,VIABLE,texture within limits,67.07,26.94,VIABLE,"optimal pH range [5.5, 7.5]",7.08,VIABLE,organic matter sufficient,0.77

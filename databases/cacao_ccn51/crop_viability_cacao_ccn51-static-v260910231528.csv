@@ -1,0 +1,2 @@
+crop,common_name,type,elevation_status,elevation_detail,elevation_m,slope_status,slope_detail,slope_deg,slope_std_deg,texture_status,texture_detail,sand_0_60_pct,clay_0_60_pct,ph_status,ph_detail,ph_0_60,soc_status,soc_detail,soc_0_60_pct
+cacao_ccn51,CCN-51 Cocoa,perennial,VIABLE,"elevation within range [0, 800] m",252.09,NOT_RECOMMENDED,slope exceeds crop limit (8.0 deg > 8 deg),8.02,2.11,VIABLE,texture within limits,40.61,34.57,VIABLE_WITH_ADVISORY,requires pH correction with lime/sulfur,4.95,VIABLE,organic matter sufficient,3.93

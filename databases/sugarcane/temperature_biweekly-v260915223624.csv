@@ -1,0 +1,258 @@
+crop,period_start,period_end,label,mean_C,std_C,var_C,temp_status,temp_detail,temp_score
+sugarcane,2016-01-01,2016-01-15,2016-01_Q1,23.11,2.5,6.25,VIABLE,optimal temperature range,1.0
+sugarcane,2016-01-16,2016-01-31,2016-01_Q2,24.43,2.72,7.39,VIABLE,optimal temperature range,1.0
+sugarcane,2016-02-01,2016-02-15,2016-02_Q1,23.62,1.6,2.57,VIABLE,optimal temperature range,1.0
+sugarcane,2016-02-16,2016-02-29,2016-02_Q2,24.8,1.08,1.16,VIABLE,optimal temperature range,1.0
+sugarcane,2016-03-01,2016-03-15,2016-03_Q1,23.4,0.51,0.26,VIABLE,optimal temperature range,1.0
+sugarcane,2016-03-16,2016-03-31,2016-03_Q2,22.03,1.69,2.87,VIABLE,optimal temperature range,1.0
+sugarcane,2016-04-01,2016-04-15,2016-04_Q1,21.67,1.42,2.02,VIABLE,optimal temperature range,1.0
+sugarcane,2016-04-16,2016-04-30,2016-04_Q2,19.72,0.73,0.53,VIABLE_WITH_RESERVE,cool for crop,0.944
+sugarcane,2016-05-01,2016-05-15,2016-05_Q1,18.92,1.82,3.32,VIABLE_WITH_RESERVE,cool for crop,0.784
+sugarcane,2016-05-16,2016-05-31,2016-05_Q2,16.64,2.12,4.49,VIABLE_WITH_RESERVE,cool for crop,0.328
+sugarcane,2016-06-01,2016-06-15,2016-06_Q1,15.22,1.13,1.27,VIABLE_WITH_RESERVE,cool for crop,0.044
+sugarcane,2016-06-16,2016-06-30,2016-06_Q2,13.32,2.33,5.42,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2016-07-01,2016-07-15,2016-07_Q1,12.64,1.64,2.68,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2016-07-16,2016-07-31,2016-07_Q2,14.5,2.36,5.59,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2016-08-01,2016-08-15,2016-08_Q1,13.82,1.03,1.06,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2016-08-16,2016-08-31,2016-08_Q2,14.37,1.68,2.81,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2016-09-01,2016-09-15,2016-09_Q1,17.21,1.79,3.2,VIABLE_WITH_RESERVE,cool for crop,0.442
+sugarcane,2016-09-16,2016-09-30,2016-09_Q2,17.1,0.81,0.65,VIABLE_WITH_RESERVE,cool for crop,0.42
+sugarcane,2016-10-01,2016-10-15,2016-10_Q1,18.28,2.19,4.79,VIABLE_WITH_RESERVE,cool for crop,0.656
+sugarcane,2016-10-16,2016-10-31,2016-10_Q2,20.13,2.01,4.02,VIABLE,optimal temperature range,1.0
+sugarcane,2016-11-01,2016-11-15,2016-11_Q1,22.79,2.14,4.56,VIABLE,optimal temperature range,1.0
+sugarcane,2016-11-16,2016-11-30,2016-11_Q2,22.49,1.14,1.31,VIABLE,optimal temperature range,1.0
+sugarcane,2016-12-01,2016-12-15,2016-12_Q1,25.01,2.44,5.94,VIABLE,optimal temperature range,1.0
+sugarcane,2016-12-16,2016-12-31,2016-12_Q2,25.35,2.78,7.72,VIABLE,optimal temperature range,1.0
+sugarcane,2017-01-01,2017-01-15,2017-01_Q1,25.53,3.02,9.1,VIABLE,optimal temperature range,1.0
+sugarcane,2017-01-16,2017-01-31,2017-01_Q2,26.42,2.15,4.62,VIABLE,optimal temperature range,1.0
+sugarcane,2017-02-01,2017-02-15,2017-02_Q1,27.68,2.73,7.47,VIABLE,optimal temperature range,1.0
+sugarcane,2017-02-16,2017-02-28,2017-02_Q2,23.99,2.31,5.35,VIABLE,optimal temperature range,1.0
+sugarcane,2017-03-01,2017-03-15,2017-03_Q1,21.98,1.0,1.01,VIABLE,optimal temperature range,1.0
+sugarcane,2017-03-16,2017-03-31,2017-03_Q2,22.91,1.28,1.65,VIABLE,optimal temperature range,1.0
+sugarcane,2017-04-01,2017-04-15,2017-04_Q1,18.73,0.74,0.55,VIABLE_WITH_RESERVE,cool for crop,0.746
+sugarcane,2017-04-16,2017-04-30,2017-04_Q2,18.11,1.2,1.45,VIABLE_WITH_RESERVE,cool for crop,0.622
+sugarcane,2017-05-01,2017-05-15,2017-05_Q1,16.68,1.14,1.3,VIABLE_WITH_RESERVE,cool for crop,0.336
+sugarcane,2017-05-16,2017-05-31,2017-05_Q2,15.82,1.68,2.83,VIABLE_WITH_RESERVE,cool for crop,0.164
+sugarcane,2017-06-01,2017-06-15,2017-06_Q1,14.05,1.4,1.96,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2017-06-16,2017-06-30,2017-06_Q2,14.38,1.31,1.73,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2017-07-01,2017-07-15,2017-07_Q1,12.12,1.19,1.41,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2017-07-16,2017-07-31,2017-07_Q2,12.7,1.72,2.95,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2017-08-01,2017-08-15,2017-08_Q1,13.7,1.74,3.02,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2017-08-16,2017-08-31,2017-08_Q2,14.68,2.01,4.02,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2017-09-01,2017-09-15,2017-09_Q1,16.24,2.5,6.25,VIABLE_WITH_RESERVE,cool for crop,0.248
+sugarcane,2017-09-16,2017-09-30,2017-09_Q2,21.28,3.27,10.71,VIABLE,optimal temperature range,1.0
+sugarcane,2017-10-01,2017-10-15,2017-10_Q1,20.08,2.38,5.64,VIABLE,optimal temperature range,1.0
+sugarcane,2017-10-16,2017-10-31,2017-10_Q2,20.25,2.98,8.86,VIABLE,optimal temperature range,1.0
+sugarcane,2017-11-01,2017-11-15,2017-11_Q1,19.39,1.53,2.34,VIABLE_WITH_RESERVE,cool for crop,0.878
+sugarcane,2017-11-16,2017-11-30,2017-11_Q2,20.67,1.46,2.14,VIABLE,optimal temperature range,1.0
+sugarcane,2017-12-01,2017-12-15,2017-12_Q1,23.15,1.46,2.12,VIABLE,optimal temperature range,1.0
+sugarcane,2017-12-16,2017-12-31,2017-12_Q2,25.24,2.2,4.85,VIABLE,optimal temperature range,1.0
+sugarcane,2018-01-01,2018-01-15,2018-01_Q1,24.98,2.23,4.99,VIABLE,optimal temperature range,1.0
+sugarcane,2018-01-16,2018-01-31,2018-01_Q2,23.89,1.59,2.54,VIABLE,optimal temperature range,1.0
+sugarcane,2018-02-01,2018-02-15,2018-02_Q1,23.61,3.68,13.51,VIABLE,optimal temperature range,1.0
+sugarcane,2018-02-16,2018-02-28,2018-02_Q2,23.56,2.03,4.12,VIABLE,optimal temperature range,1.0
+sugarcane,2018-03-01,2018-03-15,2018-03_Q1,22.16,1.63,2.67,VIABLE,optimal temperature range,1.0
+sugarcane,2018-03-16,2018-03-31,2018-03_Q2,22.93,1.58,2.5,VIABLE,optimal temperature range,1.0
+sugarcane,2018-04-01,2018-04-15,2018-04_Q1,21.69,0.89,0.79,VIABLE,optimal temperature range,1.0
+sugarcane,2018-04-16,2018-04-30,2018-04_Q2,19.01,1.4,1.96,VIABLE_WITH_RESERVE,cool for crop,0.802
+sugarcane,2018-05-01,2018-05-15,2018-05_Q1,16.77,1.9,3.61,VIABLE_WITH_RESERVE,cool for crop,0.354
+sugarcane,2018-05-16,2018-05-31,2018-05_Q2,15.21,0.98,0.96,VIABLE_WITH_RESERVE,cool for crop,0.042
+sugarcane,2018-06-01,2018-06-15,2018-06_Q1,14.12,1.11,1.23,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2018-06-16,2018-06-30,2018-06_Q2,12.67,1.05,1.09,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2018-07-01,2018-07-15,2018-07_Q1,13.46,2.84,8.05,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2018-07-16,2018-07-31,2018-07_Q2,12.83,1.79,3.2,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2018-08-01,2018-08-15,2018-08_Q1,13.91,1.41,1.98,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2018-08-16,2018-08-31,2018-08_Q2,13.77,1.48,2.19,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2018-09-01,2018-09-15,2018-09_Q1,16.54,2.29,5.25,VIABLE_WITH_RESERVE,cool for crop,0.308
+sugarcane,2018-09-16,2018-09-30,2018-09_Q2,16.7,2.08,4.32,VIABLE_WITH_RESERVE,cool for crop,0.34
+sugarcane,2018-10-01,2018-10-15,2018-10_Q1,17.56,1.95,3.8,VIABLE_WITH_RESERVE,cool for crop,0.512
+sugarcane,2018-10-16,2018-10-31,2018-10_Q2,20.59,1.37,1.87,VIABLE,optimal temperature range,1.0
+sugarcane,2018-11-01,2018-11-15,2018-11_Q1,22.78,3.22,10.39,VIABLE,optimal temperature range,1.0
+sugarcane,2018-11-16,2018-11-30,2018-11_Q2,22.07,1.55,2.4,VIABLE,optimal temperature range,1.0
+sugarcane,2018-12-01,2018-12-15,2018-12_Q1,23.28,2.06,4.23,VIABLE,optimal temperature range,1.0
+sugarcane,2018-12-16,2018-12-31,2018-12_Q2,23.75,2.12,4.49,VIABLE,optimal temperature range,1.0
+sugarcane,2019-01-01,2019-01-15,2019-01_Q1,25.34,0.76,0.58,VIABLE,optimal temperature range,1.0
+sugarcane,2019-01-16,2019-01-31,2019-01_Q2,27.53,1.18,1.4,VIABLE,optimal temperature range,1.0
+sugarcane,2019-02-01,2019-02-15,2019-02_Q1,25.49,1.78,3.16,VIABLE,optimal temperature range,1.0
+sugarcane,2019-02-16,2019-02-28,2019-02_Q2,23.7,1.72,2.94,VIABLE,optimal temperature range,1.0
+sugarcane,2019-03-01,2019-03-15,2019-03_Q1,24.56,1.99,3.95,VIABLE,optimal temperature range,1.0
+sugarcane,2019-03-16,2019-03-31,2019-03_Q2,23.13,2.52,6.35,VIABLE,optimal temperature range,1.0
+sugarcane,2019-04-01,2019-04-15,2019-04_Q1,20.42,1.71,2.94,VIABLE,optimal temperature range,1.0
+sugarcane,2019-04-16,2019-04-30,2019-04_Q2,20.06,0.7,0.49,VIABLE,optimal temperature range,1.0
+sugarcane,2019-05-01,2019-05-15,2019-05_Q1,17.64,1.68,2.82,VIABLE_WITH_RESERVE,cool for crop,0.528
+sugarcane,2019-05-16,2019-05-31,2019-05_Q2,16.19,2.15,4.61,VIABLE_WITH_RESERVE,cool for crop,0.238
+sugarcane,2019-06-01,2019-06-15,2019-06_Q1,15.14,1.31,1.71,VIABLE_WITH_RESERVE,cool for crop,0.028
+sugarcane,2019-06-16,2019-06-30,2019-06_Q2,14.01,1.38,1.9,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2019-07-01,2019-07-15,2019-07_Q1,14.08,1.73,3.01,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2019-07-16,2019-07-31,2019-07_Q2,13.95,1.24,1.53,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2019-08-01,2019-08-15,2019-08_Q1,14.62,1.35,1.81,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2019-08-16,2019-08-31,2019-08_Q2,16.05,1.47,2.16,VIABLE_WITH_RESERVE,cool for crop,0.21
+sugarcane,2019-09-01,2019-09-15,2019-09_Q1,17.44,2.11,4.45,VIABLE_WITH_RESERVE,cool for crop,0.488
+sugarcane,2019-09-16,2019-09-30,2019-09_Q2,18.99,1.61,2.6,VIABLE_WITH_RESERVE,cool for crop,0.798
+sugarcane,2019-10-01,2019-10-15,2019-10_Q1,19.22,3.45,11.89,VIABLE_WITH_RESERVE,cool for crop,0.844
+sugarcane,2019-10-16,2019-10-31,2019-10_Q2,21.75,2.44,5.94,VIABLE,optimal temperature range,1.0
+sugarcane,2019-11-01,2019-11-15,2019-11_Q1,22.93,2.52,6.35,VIABLE,optimal temperature range,1.0
+sugarcane,2019-11-16,2019-11-30,2019-11_Q2,25.28,1.84,3.37,VIABLE,optimal temperature range,1.0
+sugarcane,2019-12-01,2019-12-15,2019-12_Q1,25.39,1.92,3.67,VIABLE,optimal temperature range,1.0
+sugarcane,2019-12-16,2019-12-31,2019-12_Q2,24.3,1.67,2.8,VIABLE,optimal temperature range,1.0
+sugarcane,2020-01-01,2020-01-15,2020-01_Q1,25.92,2.1,4.39,VIABLE,optimal temperature range,1.0
+sugarcane,2020-01-16,2020-01-31,2020-01_Q2,25.88,2.31,5.33,VIABLE,optimal temperature range,1.0
+sugarcane,2020-02-01,2020-02-15,2020-02_Q1,24.14,2.66,7.05,VIABLE,optimal temperature range,1.0
+sugarcane,2020-02-16,2020-02-29,2020-02_Q2,23.7,1.79,3.21,VIABLE,optimal temperature range,1.0
+sugarcane,2020-03-01,2020-03-15,2020-03_Q1,21.95,2.36,5.57,VIABLE,optimal temperature range,1.0
+sugarcane,2020-03-16,2020-03-31,2020-03_Q2,21.07,1.65,2.73,VIABLE,optimal temperature range,1.0
+sugarcane,2020-04-01,2020-04-15,2020-04_Q1,19.74,1.69,2.85,VIABLE_WITH_RESERVE,cool for crop,0.948
+sugarcane,2020-04-16,2020-04-30,2020-04_Q2,19.55,1.02,1.05,VIABLE_WITH_RESERVE,cool for crop,0.91
+sugarcane,2020-05-01,2020-05-15,2020-05_Q1,15.88,1.44,2.08,VIABLE_WITH_RESERVE,cool for crop,0.176
+sugarcane,2020-05-16,2020-05-31,2020-05_Q2,15.78,1.18,1.39,VIABLE_WITH_RESERVE,cool for crop,0.156
+sugarcane,2020-06-01,2020-06-15,2020-06_Q1,14.63,1.45,2.11,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2020-06-16,2020-06-30,2020-06_Q2,13.1,1.36,1.84,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2020-07-01,2020-07-15,2020-07_Q1,12.87,1.23,1.52,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2020-07-16,2020-07-31,2020-07_Q2,13.64,0.71,0.51,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2020-08-01,2020-08-15,2020-08_Q1,13.99,1.58,2.49,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2020-08-16,2020-08-31,2020-08_Q2,14.13,1.51,2.27,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2020-09-01,2020-09-15,2020-09_Q1,16.95,1.82,3.31,VIABLE_WITH_RESERVE,cool for crop,0.39
+sugarcane,2020-09-16,2020-09-30,2020-09_Q2,18.42,2.43,5.88,VIABLE_WITH_RESERVE,cool for crop,0.684
+sugarcane,2020-10-01,2020-10-15,2020-10_Q1,20.02,1.17,1.37,VIABLE,optimal temperature range,1.0
+sugarcane,2020-10-16,2020-10-31,2020-10_Q2,20.69,1.58,2.49,VIABLE,optimal temperature range,1.0
+sugarcane,2020-11-01,2020-11-15,2020-11_Q1,20.86,2.16,4.66,VIABLE,optimal temperature range,1.0
+sugarcane,2020-11-16,2020-11-30,2020-11_Q2,24.66,2.76,7.64,VIABLE,optimal temperature range,1.0
+sugarcane,2020-12-01,2020-12-15,2020-12_Q1,24.16,3.78,14.32,VIABLE,optimal temperature range,1.0
+sugarcane,2020-12-16,2020-12-31,2020-12_Q2,23.79,1.36,1.85,VIABLE,optimal temperature range,1.0
+sugarcane,2021-01-01,2021-01-15,2021-01_Q1,22.73,1.99,3.98,VIABLE,optimal temperature range,1.0
+sugarcane,2021-01-16,2021-01-31,2021-01_Q2,23.63,1.2,1.45,VIABLE,optimal temperature range,1.0
+sugarcane,2021-02-01,2021-02-15,2021-02_Q1,23.06,1.25,1.56,VIABLE,optimal temperature range,1.0
+sugarcane,2021-02-16,2021-02-28,2021-02_Q2,22.66,1.58,2.51,VIABLE,optimal temperature range,1.0
+sugarcane,2021-03-01,2021-03-15,2021-03_Q1,22.39,1.34,1.8,VIABLE,optimal temperature range,1.0
+sugarcane,2021-03-16,2021-03-31,2021-03_Q2,20.77,1.02,1.05,VIABLE,optimal temperature range,1.0
+sugarcane,2021-04-01,2021-04-15,2021-04_Q1,19.02,1.73,3.01,VIABLE_WITH_RESERVE,cool for crop,0.804
+sugarcane,2021-04-16,2021-04-30,2021-04_Q2,16.61,1.03,1.06,VIABLE_WITH_RESERVE,cool for crop,0.322
+sugarcane,2021-05-01,2021-05-15,2021-05_Q1,16.92,1.53,2.33,VIABLE_WITH_RESERVE,cool for crop,0.384
+sugarcane,2021-05-16,2021-05-31,2021-05_Q2,14.18,1.24,1.53,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2021-06-01,2021-06-15,2021-06_Q1,12.59,1.57,2.45,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2021-06-16,2021-06-30,2021-06_Q2,13.73,1.13,1.28,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2021-07-01,2021-07-15,2021-07_Q1,12.92,1.85,3.43,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2021-07-16,2021-07-31,2021-07_Q2,12.43,1.56,2.44,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2021-08-01,2021-08-15,2021-08_Q1,14.86,1.8,3.24,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2021-08-16,2021-08-31,2021-08_Q2,14.98,2.02,4.07,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2021-09-01,2021-09-15,2021-09_Q1,16.83,2.19,4.81,VIABLE_WITH_RESERVE,cool for crop,0.366
+sugarcane,2021-09-16,2021-09-30,2021-09_Q2,17.14,2.15,4.63,VIABLE_WITH_RESERVE,cool for crop,0.428
+sugarcane,2021-10-01,2021-10-15,2021-10_Q1,19.16,2.2,4.83,VIABLE_WITH_RESERVE,cool for crop,0.832
+sugarcane,2021-10-16,2021-10-31,2021-10_Q2,19.98,2.52,6.36,VIABLE_WITH_RESERVE,cool for crop,0.996
+sugarcane,2021-11-01,2021-11-15,2021-11_Q1,20.32,1.95,3.81,VIABLE,optimal temperature range,1.0
+sugarcane,2021-11-16,2021-11-30,2021-11_Q2,20.78,1.29,1.67,VIABLE,optimal temperature range,1.0
+sugarcane,2021-12-01,2021-12-15,2021-12_Q1,21.87,1.04,1.09,VIABLE,optimal temperature range,1.0
+sugarcane,2021-12-16,2021-12-31,2021-12_Q2,23.09,2.38,5.68,VIABLE,optimal temperature range,1.0
+sugarcane,2022-01-01,2022-01-15,2022-01_Q1,23.23,1.03,1.07,VIABLE,optimal temperature range,1.0
+sugarcane,2022-01-16,2022-01-31,2022-01_Q2,22.87,1.64,2.68,VIABLE,optimal temperature range,1.0
+sugarcane,2022-02-01,2022-02-15,2022-02_Q1,21.7,1.92,3.68,VIABLE,optimal temperature range,1.0
+sugarcane,2022-02-16,2022-02-28,2022-02_Q2,22.37,1.46,2.13,VIABLE,optimal temperature range,1.0
+sugarcane,2022-03-01,2022-03-15,2022-03_Q1,21.99,1.34,1.79,VIABLE,optimal temperature range,1.0
+sugarcane,2022-03-16,2022-03-31,2022-03_Q2,20.89,1.25,1.56,VIABLE,optimal temperature range,1.0
+sugarcane,2022-04-01,2022-04-15,2022-04_Q1,20.18,1.3,1.69,VIABLE,optimal temperature range,1.0
+sugarcane,2022-04-16,2022-04-30,2022-04_Q2,19.0,0.96,0.91,VIABLE_WITH_RESERVE,cool for crop,0.8
+sugarcane,2022-05-01,2022-05-15,2022-05_Q1,18.55,1.13,1.28,VIABLE_WITH_RESERVE,cool for crop,0.71
+sugarcane,2022-05-16,2022-05-31,2022-05_Q2,16.25,1.77,3.14,VIABLE_WITH_RESERVE,cool for crop,0.25
+sugarcane,2022-06-01,2022-06-15,2022-06_Q1,11.65,1.39,1.94,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2022-06-16,2022-06-30,2022-06_Q2,13.25,0.83,0.68,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2022-07-01,2022-07-15,2022-07_Q1,12.2,1.38,1.91,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2022-07-16,2022-07-31,2022-07_Q2,12.87,0.88,0.77,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2022-08-01,2022-08-15,2022-08_Q1,13.68,1.61,2.59,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2022-08-16,2022-08-31,2022-08_Q2,14.14,1.34,1.81,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2022-09-01,2022-09-15,2022-09_Q1,15.06,0.97,0.95,VIABLE_WITH_RESERVE,cool for crop,0.012
+sugarcane,2022-09-16,2022-09-30,2022-09_Q2,17.54,1.0,0.99,VIABLE_WITH_RESERVE,cool for crop,0.508
+sugarcane,2022-10-01,2022-10-15,2022-10_Q1,17.07,1.79,3.21,VIABLE_WITH_RESERVE,cool for crop,0.414
+sugarcane,2022-10-16,2022-10-31,2022-10_Q2,19.97,1.98,3.91,VIABLE_WITH_RESERVE,cool for crop,0.994
+sugarcane,2022-11-01,2022-11-15,2022-11_Q1,18.93,2.51,6.3,VIABLE_WITH_RESERVE,cool for crop,0.786
+sugarcane,2022-11-16,2022-11-30,2022-11_Q2,21.57,2.16,4.68,VIABLE,optimal temperature range,1.0
+sugarcane,2022-12-01,2022-12-15,2022-12_Q1,21.06,2.61,6.82,VIABLE,optimal temperature range,1.0
+sugarcane,2022-12-16,2022-12-31,2022-12_Q2,20.97,1.6,2.57,VIABLE,optimal temperature range,1.0
+sugarcane,2023-01-01,2023-01-15,2023-01_Q1,22.42,0.87,0.76,VIABLE,optimal temperature range,1.0
+sugarcane,2023-01-16,2023-01-31,2023-01_Q2,23.74,1.79,3.19,VIABLE,optimal temperature range,1.0
+sugarcane,2023-02-01,2023-02-15,2023-02_Q1,23.98,1.95,3.79,VIABLE,optimal temperature range,1.0
+sugarcane,2023-02-16,2023-02-28,2023-02_Q2,23.01,1.59,2.53,VIABLE,optimal temperature range,1.0
+sugarcane,2023-03-01,2023-03-15,2023-03_Q1,24.12,1.75,3.06,VIABLE,optimal temperature range,1.0
+sugarcane,2023-03-16,2023-03-31,2023-03_Q2,23.12,1.8,3.26,VIABLE,optimal temperature range,1.0
+sugarcane,2023-04-01,2023-04-15,2023-04_Q1,19.14,0.95,0.9,VIABLE_WITH_RESERVE,cool for crop,0.828
+sugarcane,2023-04-16,2023-04-30,2023-04_Q2,18.77,0.87,0.75,VIABLE_WITH_RESERVE,cool for crop,0.754
+sugarcane,2023-05-01,2023-05-15,2023-05_Q1,16.22,1.02,1.04,VIABLE_WITH_RESERVE,cool for crop,0.244
+sugarcane,2023-05-16,2023-05-31,2023-05_Q2,13.43,0.8,0.65,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2023-06-01,2023-06-15,2023-06_Q1,14.76,1.37,1.87,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2023-06-16,2023-06-30,2023-06_Q2,12.4,1.19,1.41,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2023-07-01,2023-07-15,2023-07_Q1,13.37,0.78,0.61,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2023-07-16,2023-07-31,2023-07_Q2,14.04,1.86,3.46,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2023-08-01,2023-08-15,2023-08_Q1,15.58,1.26,1.58,VIABLE_WITH_RESERVE,cool for crop,0.116
+sugarcane,2023-08-16,2023-08-31,2023-08_Q2,15.94,1.23,1.52,VIABLE_WITH_RESERVE,cool for crop,0.188
+sugarcane,2023-09-01,2023-09-15,2023-09_Q1,17.25,1.96,3.85,VIABLE_WITH_RESERVE,cool for crop,0.45
+sugarcane,2023-09-16,2023-09-30,2023-09_Q2,19.67,2.08,4.31,VIABLE_WITH_RESERVE,cool for crop,0.934
+sugarcane,2023-10-01,2023-10-15,2023-10_Q1,20.81,2.01,4.06,VIABLE,optimal temperature range,1.0
+sugarcane,2023-10-16,2023-10-31,2023-10_Q2,21.38,3.84,14.75,VIABLE,optimal temperature range,1.0
+sugarcane,2023-11-01,2023-11-15,2023-11_Q1,20.44,2.17,4.73,VIABLE,optimal temperature range,1.0
+sugarcane,2023-11-16,2023-11-30,2023-11_Q2,21.78,1.87,3.51,VIABLE,optimal temperature range,1.0
+sugarcane,2023-12-01,2023-12-15,2023-12_Q1,25.36,1.36,1.84,VIABLE,optimal temperature range,1.0
+sugarcane,2023-12-16,2023-12-31,2023-12_Q2,24.96,2.73,7.46,VIABLE,optimal temperature range,1.0
+sugarcane,2024-01-01,2024-01-15,2024-01_Q1,23.88,1.14,1.31,VIABLE,optimal temperature range,1.0
+sugarcane,2024-01-16,2024-01-31,2024-01_Q2,25.56,2.07,4.29,VIABLE,optimal temperature range,1.0
+sugarcane,2024-02-01,2024-02-15,2024-02_Q1,24.76,1.66,2.76,VIABLE,optimal temperature range,1.0
+sugarcane,2024-02-16,2024-02-29,2024-02_Q2,24.56,1.67,2.8,VIABLE,optimal temperature range,1.0
+sugarcane,2024-03-01,2024-03-15,2024-03_Q1,23.27,1.52,2.32,VIABLE,optimal temperature range,1.0
+sugarcane,2024-03-16,2024-03-31,2024-03_Q2,21.4,1.1,1.21,VIABLE,optimal temperature range,1.0
+sugarcane,2024-04-01,2024-04-15,2024-04_Q1,20.73,1.42,2.03,VIABLE,optimal temperature range,1.0
+sugarcane,2024-04-16,2024-04-30,2024-04_Q2,18.67,0.88,0.78,VIABLE_WITH_RESERVE,cool for crop,0.734
+sugarcane,2024-05-01,2024-05-15,2024-05_Q1,17.0,0.41,0.17,VIABLE_WITH_RESERVE,cool for crop,0.4
+sugarcane,2024-05-16,2024-05-31,2024-05_Q2,15.53,1.35,1.81,VIABLE_WITH_RESERVE,cool for crop,0.106
+sugarcane,2024-06-01,2024-06-15,2024-06_Q1,12.96,0.99,0.98,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2024-06-16,2024-06-30,2024-06_Q2,13.32,2.15,4.61,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2024-07-01,2024-07-15,2024-07_Q1,13.14,1.11,1.24,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2024-07-16,2024-07-31,2024-07_Q2,12.56,1.73,3.0,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2024-08-01,2024-08-15,2024-08_Q1,14.35,1.55,2.41,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2024-08-16,2024-08-31,2024-08_Q2,18.43,2.17,4.73,VIABLE_WITH_RESERVE,cool for crop,0.686
+sugarcane,2024-09-01,2024-09-15,2024-09_Q1,17.74,2.71,7.33,VIABLE_WITH_RESERVE,cool for crop,0.548
+sugarcane,2024-09-16,2024-09-30,2024-09_Q2,17.63,1.84,3.39,VIABLE_WITH_RESERVE,cool for crop,0.526
+sugarcane,2024-10-01,2024-10-15,2024-10_Q1,18.28,1.94,3.77,VIABLE_WITH_RESERVE,cool for crop,0.656
+sugarcane,2024-10-16,2024-10-31,2024-10_Q2,20.58,1.94,3.76,VIABLE,optimal temperature range,1.0
+sugarcane,2024-11-01,2024-11-15,2024-11_Q1,23.31,2.04,4.17,VIABLE,optimal temperature range,1.0
+sugarcane,2024-11-16,2024-11-30,2024-11_Q2,22.14,1.9,3.6,VIABLE,optimal temperature range,1.0
+sugarcane,2024-12-01,2024-12-15,2024-12_Q1,25.34,1.35,1.81,VIABLE,optimal temperature range,1.0
+sugarcane,2024-12-16,2024-12-31,2024-12_Q2,24.15,1.97,3.87,VIABLE,optimal temperature range,1.0
+sugarcane,2025-01-01,2025-01-15,2025-01_Q1,23.0,1.63,2.66,VIABLE,optimal temperature range,1.0
+sugarcane,2025-01-16,2025-01-31,2025-01_Q2,24.5,2.11,4.46,VIABLE,optimal temperature range,1.0
+sugarcane,2025-02-01,2025-02-15,2025-02_Q1,23.91,0.58,0.34,VIABLE,optimal temperature range,1.0
+sugarcane,2025-02-16,2025-02-28,2025-02_Q2,23.0,0.75,0.56,VIABLE,optimal temperature range,1.0
+sugarcane,2025-03-01,2025-03-15,2025-03_Q1,22.41,1.04,1.09,VIABLE,optimal temperature range,1.0
+sugarcane,2025-03-16,2025-03-31,2025-03_Q2,22.11,1.26,1.59,VIABLE,optimal temperature range,1.0
+sugarcane,2025-04-01,2025-04-15,2025-04_Q1,19.72,0.74,0.55,VIABLE_WITH_RESERVE,cool for crop,0.944
+sugarcane,2025-04-16,2025-04-30,2025-04_Q2,19.11,0.85,0.72,VIABLE_WITH_RESERVE,cool for crop,0.822
+sugarcane,2025-05-01,2025-05-15,2025-05_Q1,17.5,0.67,0.45,VIABLE_WITH_RESERVE,cool for crop,0.5
+sugarcane,2025-05-16,2025-05-31,2025-05_Q2,16.85,1.18,1.4,VIABLE_WITH_RESERVE,cool for crop,0.37
+sugarcane,2025-06-01,2025-06-15,2025-06_Q1,12.78,1.98,3.92,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2025-06-16,2025-06-30,2025-06_Q2,13.51,1.62,2.62,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2025-07-01,2025-07-15,2025-07_Q1,12.76,1.22,1.49,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2025-07-16,2025-07-31,2025-07_Q2,12.91,1.13,1.28,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2025-08-01,2025-08-15,2025-08_Q1,13.59,1.42,2.01,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2025-08-16,2025-08-31,2025-08_Q2,14.16,1.88,3.54,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2025-09-01,2025-09-15,2025-09_Q1,16.47,1.8,3.26,VIABLE_WITH_RESERVE,cool for crop,0.294
+sugarcane,2025-09-16,2025-09-30,2025-09_Q2,19.09,2.31,5.33,VIABLE_WITH_RESERVE,cool for crop,0.818
+sugarcane,2025-10-01,2025-10-15,2025-10_Q1,22.51,2.54,6.46,VIABLE,optimal temperature range,1.0
+sugarcane,2025-10-16,2025-10-31,2025-10_Q2,22.07,2.88,8.32,VIABLE,optimal temperature range,1.0
+sugarcane,2025-11-01,2025-11-15,2025-11_Q1,21.66,2.3,5.3,VIABLE,optimal temperature range,1.0
+sugarcane,2025-11-16,2025-11-30,2025-11_Q2,24.42,2.03,4.13,VIABLE,optimal temperature range,1.0
+sugarcane,2025-12-01,2025-12-15,2025-12_Q1,23.62,2.05,4.19,VIABLE,optimal temperature range,1.0
+sugarcane,2025-12-16,2025-12-31,2025-12_Q2,23.31,3.27,10.68,VIABLE,optimal temperature range,1.0
+sugarcane,2026-01-01,2026-01-15,2026-01_Q1,24.17,1.37,1.87,VIABLE,optimal temperature range,1.0
+sugarcane,2026-01-16,2026-01-31,2026-01_Q2,24.37,1.98,3.93,VIABLE,optimal temperature range,1.0
+sugarcane,2026-02-01,2026-02-15,2026-02_Q1,23.93,2.38,5.67,VIABLE,optimal temperature range,1.0
+sugarcane,2026-02-16,2026-02-28,2026-02_Q2,24.65,1.84,3.39,VIABLE,optimal temperature range,1.0
+sugarcane,2026-03-01,2026-03-15,2026-03_Q1,23.31,1.65,2.72,VIABLE,optimal temperature range,1.0
+sugarcane,2026-03-16,2026-03-31,2026-03_Q2,22.02,1.56,2.43,VIABLE,optimal temperature range,1.0
+sugarcane,2026-04-01,2026-04-15,2026-04_Q1,22.04,2.04,4.15,VIABLE,optimal temperature range,1.0
+sugarcane,2026-04-16,2026-04-30,2026-04_Q2,19.34,1.4,1.97,VIABLE_WITH_RESERVE,cool for crop,0.868
+sugarcane,2026-05-01,2026-05-15,2026-05_Q1,17.87,1.52,2.32,VIABLE_WITH_RESERVE,cool for crop,0.574
+sugarcane,2026-05-16,2026-05-31,2026-05_Q2,17.48,1.3,1.69,VIABLE_WITH_RESERVE,cool for crop,0.496
+sugarcane,2026-06-01,2026-06-15,2026-06_Q1,15.24,1.25,1.57,VIABLE_WITH_RESERVE,cool for crop,0.048
+sugarcane,2026-06-16,2026-06-30,2026-06_Q2,14.36,1.1,1.22,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2026-07-01,2026-07-15,2026-07_Q1,13.73,1.34,1.8,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2026-07-16,2026-07-31,2026-07_Q2,14.08,1.45,2.09,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2026-08-01,2026-08-15,2026-08_Q1,14.62,0.58,0.33,NOT_RECOMMENDED,too cold for crop,0.0
+sugarcane,2026-08-16,2026-08-31,2026-08_Q2,16.11,1.3,1.7,VIABLE_WITH_RESERVE,cool for crop,0.222
+sugarcane,2026-09-01,2026-09-15,2026-09_Q1,19.69,1.84,3.39,VIABLE_WITH_RESERVE,cool for crop,0.938

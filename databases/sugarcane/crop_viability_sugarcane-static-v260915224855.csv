@@ -1,0 +1,2 @@
+crop,common_name,type,elevation_status,elevation_detail,elevation_m,slope_status,slope_detail,slope_deg,slope_std_deg,texture_status,texture_detail,sand_0_60_pct,clay_0_60_pct,ph_status,ph_detail,ph_0_60,soc_status,soc_detail,soc_0_60_pct
+sugarcane,Sugarcane,perennial,VIABLE,"elevation within range [0, 1500] m",33.4,VIABLE,slope within limit,1.26,0.61,VIABLE,texture within limits,34.51,45.38,VIABLE_WITH_ADVISORY,requires pH correction with lime/sulfur,7.54,VIABLE,organic matter sufficient,1.56

@@ -1,0 +1,6 @@
+depth,Field_Capacity_CC_%,Wilting_Point_PMP_%,Available_Water_Capacity_AWC_%,AWC_layer_mm
+0-5cm,28.65,18.35,10.3,5.15
+5-15cm,27.69,17.8,9.89,9.89
+15-30cm,32.6,21.9,10.7,16.05
+30-60cm,32.3,21.74,10.56,31.69
+60-100cm,32.32,21.73,10.59,42.38
