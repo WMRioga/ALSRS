@@ -75,8 +75,8 @@ from crop_viability import DATABASES_DIR
 # Configuration
 # ---------------------------------------------------------------------------
 
-CROP = "cacao_ccn51"
-POINTS_CSV = _PROJECT_ROOT / "ml" / "cacao_points.csv"
+CROP = "sugarcane"
+POINTS_CSV = _PROJECT_ROOT / "ml" / "points" / "sugarcane_points.csv"
 MAX_RETRIES = 3
 RETRY_BACKOFF_S = 5
 
@@ -193,19 +193,27 @@ def process_point(point_id: str, lat: float, lon: float) -> pd.DataFrame:
     """
     Runs the pipeline for one point and returns its ML rows.
 
+    Every per-point extraction output is written into a per-crop subfolder of
+    the databases directory (``databases/<crop>/``), so a batch collection run
+    keeps its files together instead of scattering them across ``databases/``.
     The verbose console reports of the pipeline are silenced so the batch log
     stays readable; only the collector's own progress lines are printed.
     """
+    crop_dir = DATABASES_DIR / CROP
+    crop_dir.mkdir(parents=True, exist_ok=True)
+
     with contextlib.redirect_stdout(io.StringIO()):
         _, temp_path = crop_viability.main(
-            lat, lon, CROP, area_ha=2.0, regenerate=True
+            lat, lon, CROP, area_ha=2.0, regenerate=True, output_dir=crop_dir
         )
-        wb_path = water_balance.main(lat, lon, CROP, regenerate=True)
+        wb_path = water_balance.main(
+            lat, lon, CROP, regenerate=True, output_dir=crop_dir
+        )
 
     wb_df = pd.read_csv(wb_path)
     temp_df = pd.read_csv(temp_path)
-    precip_df = pd.read_csv(latest_csv("precipitation_biweekly-v*.csv"))
-    spei_df = pd.read_csv(latest_csv("spei_biweekly-v*.csv"))
+    precip_df = pd.read_csv(latest_csv("precipitation_biweekly-v*.csv", crop_dir))
+    spei_df = pd.read_csv(latest_csv("spei_biweekly-v*.csv", crop_dir))
 
     return build_ml_rows(wb_df, temp_df, precip_df, spei_df, point_id, lat, lon)
 

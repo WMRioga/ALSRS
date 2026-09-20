@@ -18,7 +18,7 @@ crop parameters from `databases/crop_parameters_260822.csv`.
 
 | # | Column | Description | Origin |
 |---|---|---|---|
-| 0 | `point_id` | Sampled-point identifier (`p001`…`p120`). | Manual label |
+| 0 | `point_id` | Sampled-point identifier (`p001`…`p240`, 239 points). | Manual label |
 | 1 | `lat` | Point latitude (decimal degrees). | Input coordinate |
 | 2 | `lon` | Point longitude (decimal degrees). | Input coordinate |
 | 3 | `crop` | Crop identifier (`cacao_ccn51`). Constant across the dataset. | Fixed parameter |

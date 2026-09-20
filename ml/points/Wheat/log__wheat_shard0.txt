@@ -1,0 +1,8 @@
+Collecting wheat [shard 0/4]: 60 points (59 already done).
+[48/60] p048 Kondinin8_WA ... - [22:54:02]
+/home/wmlegion/miniconda3/envs/agri_land_env/lib/python3.10/site-packages/google/api_core/_python_version_support.py:255: FutureWarning: You are using a Python version (3.10.20) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+      OK: 221 rows - [22:54:58]
+
+Done [shard 0/4]. OK: 60 | Failed: 1
+Dataset: ml_dataset_wheat_shard0.csv (13260 rows)

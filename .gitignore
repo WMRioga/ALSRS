@@ -30,3 +30,6 @@ ml/eval_*.csv
 # Thesis working subfolders (kept locally, not versioned)
 thesis/md/
 thesis/tex/
+
+# Reproduced table snapshot (regenerable from 06_reproduce_ch4_tables.ipynb)
+ml/ch4_tables.json

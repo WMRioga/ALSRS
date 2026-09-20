@@ -45,8 +45,8 @@ is deliberately **not** attempted — that is physically chaotic beyond ~2 weeks
 
 - **Why 3 classes:** the MEDIUM↔HIGH boundary (30) was the dominant source of
   error (a large share of HIGH rows were predicted MEDIUM). Merging them into
-  MODERATE raised the exact-class recall from ~0.42–0.61 to ~0.83 and overall
-  accuracy from ~0.69 to ~0.78, while keeping the "urgent" class SEVERE apart.
+  MODERATE raised the exact-class recall from ~0.42–0.61 to ~0.84 and overall
+  accuracy from ~0.69 to ~0.77, while keeping the "urgent" class SEVERE apart.
 
 ### Derived suggestion
 
@@ -73,9 +73,20 @@ P_acum_mm, WRSI_1m, deficit_1m, oni
 - **Seasonality**: `month`, `biweek`.
 - **ENSO**: `oni` (Oceanic Niño Index, NOAA CPC).
 
-Excluded on purpose: `point_id`, `lat`, `lon` (identity/location — would leak
-farm identity), `crop` (constant in this single-crop dataset), dates, `label`,
-the `_mm` companions (informative only), and `suggestion` (derived target).
+Every feature is known at time `t`, so no future information leaks into the
+model, and each maps to a physical driver of the deficit. The dataset carries
+33 columns in total. Of these, 17 are features and 3 are the forecast targets;
+the remaining 13 are metadata, reference values or derived outputs and never
+enter the model. `point_id`, `lat` and `lon` would leak farm identity and let
+the model memorize sites instead of learning a physical relationship that
+generalizes to new coordinates. `crop` is constant in this single-crop dataset,
+and `period_start`, `period_end` and `label` are calendar keys whose information
+`month` and `biweek` already carry. The `_mm` companions duplicate the
+percentage targets in mm, `past_deficit_3m` and `past_deficit_6m` exist only as
+persistence baselines (as features they would leak the answer), and `suggestion`
+is the derived target. Elevation and slope never enter the dataset, because
+they act as suitability constraints in Phase 1 rather than as deficit
+predictors.
 
 ---
 
@@ -129,13 +140,13 @@ prediction = 0           otherwise
 Stage 1 only decides *whether* there is a deficit; stage 2 contributes the full
 magnitude. This recovers the recall of the severe classes that the naive
 `P * magnitude` combination lost, while keeping the large MAE gain from nailing
-the zero rows.
+the zero rows. The threshold is per crop. Cacao uses 0.5 and sugarcane uses 0.75.
 
 ---
 
 ## 6. Class imbalance and weighting
 
-The targets are **zero-inflated** (40–73% of rows have deficit = 0) and skewed
+The targets are **zero-inflated** (39–73% of rows have deficit = 0) and skewed
 toward low values, while the rare high-deficit events are the ones that matter
 for irrigation. The hurdle handles this in two complementary ways:
 
@@ -145,20 +156,33 @@ for irrigation. The hurdle handles this in two complementary ways:
   so the rare extreme events dominate the fit (with `linear`, ~66% of the
   weight concentrates on the ~11% of rows with deficit > 50%).
 
+The `linear` weight was chosen by explicit comparison (experiment A in
+`evaluate_model.py`): three schemes were evaluated — **linear** (`deficit`),
+**squared** (`deficit²`) and **plus-1-squared** (`1 + deficit²`). On the single
+regressor, `plus1sq` gave the **lowest MAE** (~5–8 vs ~11–12 percentage points),
+because it also weights the zero-deficit rows and thus "nails" them; but it gave
+the **lowest severe-case recall** (~0.64). `linear` gave the **highest SEVERE
+recall** (~0.72) at the cost of a higher MAE. Since the severe cases are the
+decision-relevant ones, `linear` was adopted — the higher single-regressor MAE is
+then removed by the hurdle's stage-1 classifier.
+
 This prioritizes the extreme events without artificially resampling the data.
 
 ---
 
-## 7. Train / test split
+## 7. Train / validation / test split (70/10/20)
 
 - **Split by point (farm), not by row**: a farm's whole time series goes
-  entirely to train or entirely to test, preventing leakage from the temporal
-  autocorrelation within a farm.
-- Ratio 80/20, fixed seed (42), **no zone stratification** (the model predicts
-  behaviour, not zone).
-- Primary evaluation: generalization to **unseen farms** (the real use case:
-  a new user's farm). A **temporal split** is kept as a secondary robustness
-  check of non-stationarity.
+  entirely to one set, preventing leakage from the temporal autocorrelation
+  within a farm.
+- **70% train / 10% validation / 20% test**, fixed seed (42), no zone
+  stratification (the model predicts behaviour, not zone):
+  - **train** (70%) — fit the model.
+  - **validation** (10%) — tune the gate threshold and the class scheme.
+  - **test** (20%) — final report, touched **once**.
+- Because the 10% validation set is small, the gate threshold is also confirmed
+  with **5-fold CV on the train set** (grouped by farm) for a more robust
+  tuning signal; the test set is never used for tuning.
 
 ---
 
@@ -168,8 +192,8 @@ This prioritizes the extreme events without artificially resampling the data.
 
 - **MAE** and **RMSE per horizon** (1m, 3m, 6m), cross-validated 5-fold by farm
   (`GroupKFold` grouped by `point_id`).
-- Compared against a **persistence baseline** (same-window backward deficit),
-  to prove the model beats "tomorrow ≈ today".
+- Compared against a **single-RF baseline** (same features, `sample_weight =
+  deficit`), to prove the hurdle improves on the plain regressor.
 
 ### Derived classification (secondary)
 
@@ -183,9 +207,9 @@ This prioritizes the extreme events without artificially resampling the data.
 ### Key results (5-fold CV + holdout)
 
 - The gated hurdle matches the single-RF recall of the severe classes while
-  cutting MAE by ~30–58% (it nails the zero rows).
-- 3 classes raise the exact-class recall of MODERATE to ~0.83 (vs 0.42–0.61 for
-  the split MEDIUM / HIGH) and overall accuracy to ~0.78.
+  cutting MAE by ~31–63% (it nails the zero rows).
+- 3 classes raise the exact-class recall of MODERATE to ~0.84 (vs 0.42–0.61 for
+  the split MEDIUM / HIGH) and overall accuracy to ~0.77.
 
 ---
 
