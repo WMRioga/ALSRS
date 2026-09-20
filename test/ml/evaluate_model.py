@@ -1,16 +1,20 @@
 """
-ALSRS — Model Evaluation Script
-===============================
+ALSRS — Model Evaluation Script (single-RF baseline)
+====================================================
 
-Runs the four Phase-2 experiments to tune and evaluate the irrigation-need
-model. Written in plain, readable code (no pipelines) so each step can be
+Runs the four Phase-2 experiments to tune and evaluate the single-regressor
+baseline. Written in plain, readable code (no pipelines) so each step can be
 explained in the thesis.
 
+All experiments use the 70/10/20 by-farm split (train / validation / test):
+the model is tuned on train + validation, and the test set is reserved for the
+final report in ``05_train_validation_test.ipynb``.
+
 Experiments:
-    A. Weight comparison  : linear vs squared vs (1 + deficit^2).
-    B. Hyperparameter grid: small manual grid, cross-validated.
-    C. Learning curve     : train on growing fractions of farms.
-    D. Cross-validation   : 5-fold by point (farm); model vs persistence baseline.
+    A. Weight comparison  : linear vs squared vs (1 + deficit^2), on validation.
+    B. Hyperparameter grid: small manual grid, cross-validated on TRAIN.
+    C. Learning curve     : train on growing fractions of train, eval on validation.
+    D. Cross-validation   : 5-fold by farm on TRAIN; model vs persistence baseline.
 
 Every fit prints a start/end timestamp so execution time can be measured.
 Results are saved as CSVs in ml/.
@@ -132,8 +136,23 @@ def class_recall(y_true, y_pred, cls) -> float:
     return float((y_pred[mask] == cls).mean())
 
 
+def split_701020(df: pd.DataFrame, seed: int = 42):
+    """Split by farm into 70% train / 10% validation / 20% test.
+
+    A farm's whole time series goes to exactly one set, preventing temporal
+    leakage. Returns (train, validation, test).
+    """
+    point_ids = df["point_id"].unique()
+    train_pts, rest = train_test_split(point_ids, test_size=0.30, random_state=seed)
+    val_pts, test_pts = train_test_split(rest, test_size=2 / 3, random_state=seed)
+    tr = df[df["point_id"].isin(train_pts)]
+    va = df[df["point_id"].isin(val_pts)]
+    te = df[df["point_id"].isin(test_pts)]
+    return tr, va, te
+
+
 # ---------------------------------------------------------------------------
-# Experiment A: weight comparison (train/test split)
+# Experiment A: weight comparison (train/validation split)
 # ---------------------------------------------------------------------------
 
 def experiment_a(df: pd.DataFrame) -> pd.DataFrame:
@@ -141,14 +160,11 @@ def experiment_a(df: pd.DataFrame) -> pd.DataFrame:
     print("EXPERIMENT A — Weight comparison (linear vs squared vs plus1sq)")
     print("=" * 78)
 
-    # Same 80/20 by-point split as the notebook.
-    point_ids = df["point_id"].unique()
-    train_pts, test_pts = train_test_split(point_ids, test_size=0.20,
-                                           random_state=42)
-    tr = df[df["point_id"].isin(train_pts)]
-    te = df[df["point_id"].isin(test_pts)]
+    # 70/10/20 by-farm split; the comparison is a tuning step, so it is done
+    # on the VALIDATION set (the test set stays untouched).
+    tr, va, te = split_701020(df)
     Xtr = tr[FEATURES]
-    Xte = te[FEATURES]
+    Xva = va[FEATURES]
 
     rows = []
     for wname, wfn in WEIGHTS.items():
@@ -159,18 +175,16 @@ def experiment_a(df: pd.DataFrame) -> pd.DataFrame:
             w = wfn(tr[target])
             label = f"{target}"
             timed_fit(model, Xtr, tr[target], w, label)
-            preds[target] = model.predict(Xte)
+            preds[target] = model.predict(Xva)
 
-            mae = mean_absolute_error(te[target], preds[target])
-            r = rmse(te[target], preds[target])
+            mae = mean_absolute_error(va[target], preds[target])
+            r = rmse(va[target], preds[target])
             rows.append([wname, target, mae, r])
 
         # Derived classification (worst of 3) recall on HIGH / NOT_SUITABLE.
-        true_cls = te[TARGETS].applymap(classify_deficit)
-        # Build predicted classes with the SAME index as the test rows, so the
-        # boolean masks below align correctly.
+        true_cls = va[TARGETS].map(classify_deficit)
         pred_cls = pd.DataFrame({
-            t: pd.Series(preds[t], index=te.index).apply(classify_deficit)
+            t: pd.Series(preds[t], index=va.index).map(classify_deficit)
             for t in TARGETS
         })
         true_sugg = true_cls.apply(lambda r: worst_of(*r), axis=1)
@@ -186,14 +200,15 @@ def experiment_a(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Experiment B: hyperparameter grid (cross-validated on train farms)
+# Experiment B: hyperparameter grid (cross-validated on the train set)
 # ---------------------------------------------------------------------------
 
 def cv_eval(df, target, weight_fn, model_params, n_splits=5):
     """5-fold by-point cross-validation for one target.
 
-    Returns a dict with the model's (mae, rmse, r2) plus three baselines
-    evaluated on the SAME folds:
+    Called on the TRAIN set (70%), so the validation and test sets are never
+    touched. Returns a dict with the model's (mae, rmse, r2) plus three
+    baselines evaluated on the SAME folds:
 
       - base_persist: same-window persistence (honest, matched window size).
         For each horizon it uses the deficit accumulated over the SAME-sized
@@ -207,7 +222,6 @@ def cv_eval(df, target, weight_fn, model_params, n_splits=5):
     R2 is reported for reference only: it is unreliable on zero-inflated
     targets (many 0-deficit rows depress it).
     """
-    # Same-window persistence baseline for each horizon.
     persist_col = {
         "future_deficit_1m": "deficit_1m",
         "future_deficit_3m": "past_deficit_3m",
@@ -232,9 +246,6 @@ def cv_eval(df, target, weight_fn, model_params, n_splits=5):
         r2s.append(r2_score(yva, pred))
 
         # Persistence baseline: same-window deficit immediately before t.
-        # Read from the full df (past_deficit_* are not in FEATURES).
-        # Filter rows where the baseline is NaN (early rows of each point
-        # have no full past window).
         persist = df.iloc[va_idx][persist_col]
         valid = persist.notna() & yva.notna()
         p_maes.append(mean_absolute_error(yva[valid], persist[valid]))
@@ -268,10 +279,13 @@ def cv_eval(df, target, weight_fn, model_params, n_splits=5):
 
 def experiment_b(df: pd.DataFrame) -> pd.DataFrame:
     print("\n" + "=" * 78)
-    print("EXPERIMENT B — Hyperparameter grid (5-fold CV, 6-month target)")
+    print("EXPERIMENT B — Hyperparameter grid (5-fold CV on train, 6-month target)")
     print("=" * 78)
 
-    # Tune on the 6-month horizon (the hardest), with linear weight.
+    # CV runs on the TRAIN set (70%); the test set is reserved for the final
+    # report in 05_train_validation_test.ipynb.
+    tr, va, te = split_701020(df)
+
     target = "future_deficit_6m"
     wfn = weight_linear
 
@@ -293,7 +307,7 @@ def experiment_b(df: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for params in grid:
         t0 = time.time()
-        res = cv_eval(df, target, wfn, params)
+        res = cv_eval(tr, target, wfn, params)
         mae, r = res["mae"], res["rmse"]
         elapsed = time.time() - t0
         desc = (f"n={params['n_estimators']} d={params['max_depth']} "
@@ -311,7 +325,7 @@ def experiment_b(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Experiment C: learning curve (growing fraction of farms)
+# Experiment C: learning curve (growing fraction of train farms)
 # ---------------------------------------------------------------------------
 
 def experiment_c(df: pd.DataFrame) -> pd.DataFrame:
@@ -319,27 +333,27 @@ def experiment_c(df: pd.DataFrame) -> pd.DataFrame:
     print("EXPERIMENT C — Learning curve (25/50/75/100% of train farms)")
     print("=" * 78)
 
-    point_ids = df["point_id"].unique()
-    train_pts, test_pts = train_test_split(point_ids, test_size=0.20,
-                                           random_state=42)
-    te = df[df["point_id"].isin(test_pts)]
-    Xte = te[FEATURES]
+    # Train on growing fractions of the TRAIN set (70%), evaluate on the
+    # VALIDATION set (10%).
+    tr, va, te = split_701020(df)
+    Xva = va[FEATURES]
+    train_pts = tr["point_id"].unique()
 
     rows = []
     for frac in [0.25, 0.50, 0.75, 1.0]:
         n_farms = int(len(train_pts) * frac)
         subset_pts = train_pts[:n_farms]  # deterministic (seeded split order)
-        tr = df[df["point_id"].isin(subset_pts)]
-        Xtr = tr[FEATURES]
+        sub = df[df["point_id"].isin(subset_pts)]
+        Xsub = sub[FEATURES]
         print(f"\n  Training on {len(subset_pts)} farms ({frac:.0%}):")
 
         for target in TARGETS:
             model = make_model()
-            w = weight_linear(tr[target])
-            timed_fit(model, Xtr, tr[target], w, f"{target} ({len(subset_pts)}f)")
-            pred = model.predict(Xte)
-            mae = mean_absolute_error(te[target], pred)
-            r = rmse(te[target], pred)
+            w = weight_linear(sub[target])
+            timed_fit(model, Xsub, sub[target], w, f"{target} ({len(subset_pts)}f)")
+            pred = model.predict(Xva)
+            mae = mean_absolute_error(va[target], pred)
+            r = rmse(va[target], pred)
             rows.append([frac, len(subset_pts), target, mae, r])
 
     out = pd.DataFrame(rows, columns=["frac", "n_farms", "target", "mae", "rmse"])
@@ -353,13 +367,17 @@ def experiment_c(df: pd.DataFrame) -> pd.DataFrame:
 
 def experiment_d(df: pd.DataFrame) -> pd.DataFrame:
     print("\n" + "=" * 78)
-    print("EXPERIMENT D — 5-fold CV by point: model vs 3 baselines")
+    print("EXPERIMENT D — 5-fold CV on train: model vs 3 baselines")
     print("=" * 78)
+
+    # CV runs on the TRAIN set (70%); the test set is reserved for the final
+    # report in 05_train_validation_test.ipynb.
+    tr, va, te = split_701020(df)
 
     rows = []
     for target in TARGETS:
         t0 = time.time()
-        res = cv_eval(df, target, weight_linear, {})
+        res = cv_eval(tr, target, weight_linear, {})
         elapsed = time.time() - t0
         rows.append([target, res["mae"], res["rmse"], res["r2"],
                      res["base_persist_mae"], res["base_persist_rmse"],
@@ -391,7 +409,7 @@ def experiment_d(df: pd.DataFrame) -> pd.DataFrame:
 
 def main() -> None:
     print("=" * 78)
-    print("ALSRS — Model Evaluation")
+    print("ALSRS — Model Evaluation (single-RF baseline)")
     print(f"Started: {now()}")
     print("=" * 78)
 

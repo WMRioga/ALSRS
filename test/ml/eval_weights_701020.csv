@@ -1,0 +1,4 @@
+weight,val_mae_1m,val_rmse_1m,val_mae_3m,val_rmse_3m,val_mae_6m,val_rmse_6m,val_recall_MODERATE,val_recall_SEVERE,test_mae_1m,test_rmse_1m,test_mae_3m,test_rmse_3m,test_mae_6m,test_rmse_6m,test_recall_MODERATE,test_recall_SEVERE
+linear,11.56,13.99,11.52,13.21,11.05,13.33,0.905,0.722,11.84,14.31,11.37,13.25,10.61,13.02,0.88,0.652
+squared,12.11,14.6,13.14,14.88,11.65,13.82,0.921,0.704,12.4,14.92,12.69,14.52,11.04,13.42,0.895,0.636
+plus1sq,4.98,9.64,6.74,9.83,8.45,11.39,0.747,0.637,5.51,10.33,6.99,10.5,8.6,11.84,0.671,0.583
